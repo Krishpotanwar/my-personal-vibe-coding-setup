@@ -107,7 +107,40 @@ Optional web viewer:
 
 ---
 
-## 5) Restart CLIs
+## 5) Enforce per-AI memory tags (important)
+
+Use this shared tag schema for any manual/shared-memory write so entries are attributable:
+
+```text
+[agent:<agent-tag>] [source:<cli>] [action:<action>] [by:<actor>] [scope:<project-or-module>] [ref:<ticket-or-none>]
+```
+
+Required fields:
+
+- `agent`: which AI family wrote it
+- `source`: exact client/tool that generated the entry
+- `action`: what was done (`plan`, `fix`, `refactor`, `decision`, `research`, `release`, `note`)
+- `by`: who executed it (`claude`, `copilot`, `gemini`, `qwen`, `codex`, or human handle)
+- `scope`: target area (`repo`, `auth`, `payments`, etc.)
+- `ref`: issue/PR/task id or `none`
+
+Agent tag map:
+
+- Claude Code → `agent:claude`
+- Copilot CLI → `agent:copilot`
+- Gemini CLI → `agent:gemini`
+- Codex CLI → `agent:codex`
+- Qwen CLI → `agent:qwen`
+
+Example:
+
+```text
+[agent:gemini] [source:gemini-cli] [action:fix] [by:gemini] [scope:auth] [ref:issue-42] Fixed callback redirect mismatch and updated redirect allowlist notes.
+```
+
+---
+
+## 6) Restart CLIs
 
 After config updates, restart:
 
@@ -120,7 +153,7 @@ This ensures each tool reloads MCP/hook settings.
 
 ---
 
-## 6) Common troubleshooting
+## 7) Common troubleshooting
 
 ### `Unknown IDE: qwen`
 
@@ -147,11 +180,12 @@ Some installers write absolute Node paths (for example Homebrew Node). This is f
 
 ---
 
-## 7) Security and operations notes
+## 8) Security and operations notes
 
 - `claude-mem` stores memory locally; review your local config before team-wide rollout.
 - If using this in an org repo, document expected local setup in `README.md` and keep machine-specific absolute paths out of committed configs where possible.
 - `claude-mem` is AGPL-3.0 licensed; verify compliance requirements for your environment.
+- Do not add AI tools as commit co-authors/contributors unless explicitly requested by the user.
 
 ---
 
@@ -168,4 +202,3 @@ Then manually add `mcpServers.claude-mem` to both:
 
 - `~/.qwen/settings.json`
 - `<repo>/.qwen/settings.json`
-

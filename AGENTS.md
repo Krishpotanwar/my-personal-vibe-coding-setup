@@ -153,3 +153,24 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 2. Use `detect_changes` for code review.
 3. Use `get_affected_flows` to understand impact.
 4. Use `query_graph` pattern="tests_for" to check coverage.
+
+---
+
+## Shared memory tagging protocol
+
+When adding manual/shared-memory notes, prefix entries with:
+
+`[agent:codex] [source:codex-cli] [action:<action>] [by:codex] [scope:<area>] [ref:<id-or-none>]`
+
+Use `action` from:
+- `plan`
+- `fix`
+- `refactor`
+- `decision`
+- `research`
+- `release`
+- `note`
+
+Example:
+
+`[agent:codex] [source:codex-cli] [action:decision] [by:codex] [scope:payments] [ref:pr-18] Chose webhook idempotency strategy with duplicate-safe keying.`

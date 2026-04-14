@@ -63,6 +63,32 @@ So your context doesn’t die every time you switch tools.
 
 ---
 
+## Memory tagging rule (who did what)
+
+For shared-memory/manual memory writes, every entry must include this prefix:
+
+```text
+[agent:<agent-tag>] [source:<cli>] [action:<action>] [by:<actor>] [scope:<project-or-module>] [ref:<ticket-or-none>]
+```
+
+Tag mapping:
+
+- `agent:claude` for Claude Code
+- `agent:copilot` for Copilot CLI
+- `agent:gemini` for Gemini CLI
+- `agent:codex` for Codex CLI
+- `agent:qwen` for Qwen CLI
+
+Example:
+
+```text
+[agent:qwen] [source:qwen-cli] [action:research] [by:qwen] [scope:memory] [ref:none] Compared MCP hooks vs transcript watcher behavior.
+```
+
+This keeps memory searchable by tool and by actor without guessing.
+
+---
+
 ## Quick start (the no-drama version)
 
 ### 1) Clone
@@ -186,4 +212,3 @@ This repo is my config/docs setup.
 ---
 
 If this setup saves you even one afternoon of “why is this tool pretending it has amnesia,” mission accomplished.
-

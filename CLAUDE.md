@@ -173,3 +173,24 @@ Key routing rules:
 - Architecture review → invoke plan-eng-review
 - Save progress, checkpoint, resume → invoke checkpoint
 - Code quality, health check → invoke health
+
+---
+
+## Shared memory tagging protocol
+
+When writing manual/shared-memory entries, always prefix with:
+
+`[agent:claude] [source:claude-code] [action:<action>] [by:claude] [scope:<area>] [ref:<id-or-none>]`
+
+Allowed `action`:
+- `plan`
+- `fix`
+- `refactor`
+- `decision`
+- `research`
+- `release`
+- `note`
+
+Example:
+
+`[agent:claude] [source:claude-code] [action:research] [by:claude] [scope:auth] [ref:issue-42] Traced redirect bug to missing callback exchange step.`

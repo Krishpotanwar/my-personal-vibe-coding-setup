@@ -36,3 +36,24 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 2. Use `detect_changes` for code review.
 3. Use `get_affected_flows` to understand impact.
 4. Use `query_graph` pattern="tests_for" to check coverage.
+
+---
+
+## Shared memory tagging protocol
+
+When writing manual/shared-memory notes, prefix with:
+
+`[agent:gemini] [source:gemini-cli] [action:<action>] [by:gemini] [scope:<area>] [ref:<id-or-none>]`
+
+Allowed `action`:
+- `plan`
+- `fix`
+- `refactor`
+- `decision`
+- `research`
+- `release`
+- `note`
+
+Example:
+
+`[agent:gemini] [source:gemini-cli] [action:fix] [by:gemini] [scope:memory] [ref:none] Updated hook config to keep consistent session context.`

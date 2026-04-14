@@ -1,0 +1,6 @@
+.DS_Store
+
+# Local/sensitive runtime state
+.claude/settings.local.json
+.claude/checkpoints.log
+.qwen/settings.json.orig

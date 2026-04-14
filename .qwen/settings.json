@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)",
+      "Bash(wc *)",
+      "Bash(git add *)",
+      "Bash(git reset *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(rm *)",
+      "Bash(git pull *)",
+      "Bash(python *)"
+    ]
+  },
+  "mcpServers": {
+    "claude-mem": {
+      "command": "node",
+      "args": [
+        "/Users/krish/.claude/plugins/marketplaces/thedotmack/plugin/scripts/mcp-server.cjs"
+      ]
+    }
+  },
+  "$version": 3
+}

@@ -1,56 +1,78 @@
 # My Personal Vibe Coding Setup
 
-A production-ready personal AI coding environment combining:
+You know that moment when your AI assistant is *almost* in flow, then you switch tools and it acts like you just met?
 
-- **Claude Code** setup (`.claude/`)
-- **Copilot CLI** instructions and MCP config
-- **Gemini CLI** hooks/context integration
-- **Codex CLI** transcript-aware memory integration
-- **Qwen CLI** manual MCP wiring
-- **Shared memory across tools** with [`thedotmack/claude-mem`](https://github.com/thedotmack/claude-mem)
+Yeah. I got tired of that too.
 
-This repo is a **sanitized, portable setup template** focused on multi-agent workflows, memory continuity, and MCP-first tooling.
+So I built this repo to make my Claude + Copilot CLI + Gemini CLI + Codex + Qwen setup feel like one continuous brain instead of five goldfish with keyboards.
 
 ---
 
-## What’s inside
+## What this repo actually is
 
-| Path | Purpose |
+A sanitized, usable setup template for:
+
+- Claude Code (`.claude/`)
+- Copilot CLI
+- Gemini CLI
+- Codex CLI
+- Qwen CLI
+- Shared memory using [`claude-mem`](https://github.com/thedotmack/claude-mem)
+
+“Sanitized” means useful config is here, private local junk is not.
+
+---
+
+## Why this exists
+
+Most AI setup READMEs fall into one of these buckets:
+
+1. Beautiful marketing page, zero practical details
+2. 47 commands, no clue what each one changes
+3. Works for one tool, chaos for the rest
+
+I wanted a setup that’s honest, practical, and boringly repeatable.
+
+---
+
+## Repo map
+
+| Path | What it does |
 |---|---|
-| `.claude/` | Claude agents, commands, hooks, helper scripts, skills |
-| `.github/copilot-instructions.md` | Copilot behavior/instructions |
-| `.qwen/settings.json` | Project-level Qwen configuration + claude-mem MCP |
-| `.codex/config.toml` | Codex CLI environment configuration |
+| `.claude/` | My Claude agents, commands, hooks, helper scripts, and skills |
+| `.github/copilot-instructions.md` | Copilot behavior instructions |
+| `.qwen/settings.json` | Project-level Qwen config + `claude-mem` MCP entry |
+| `.codex/config.toml` | Codex CLI config |
 | `.mcp.json` | Workspace MCP servers (`claude-flow`, `code-review-graph`) |
-| `SHARED_MEMORY_SETUP.md` | End-to-end setup for shared memory across CLIs |
-| `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` | Agent guidance and context files |
+| `SHARED_MEMORY_SETUP.md` | Full step-by-step shared-memory setup |
+| `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` | Context/instruction docs for agent behavior |
 
 ---
 
-## Core idea: one memory layer, multiple CLIs
+## The whole trick in one paragraph
 
-`claude-mem` is used as the shared memory backbone:
+Use **one memory backbone** (`claude-mem`) and connect each CLI the way it expects:
 
-1. **Copilot CLI** uses MCP integration (`~/.github/copilot/mcp.json`)
-2. **Gemini CLI** uses hook integration (`~/.gemini/settings.json`)
-3. **Codex CLI** uses transcript watching (`~/.claude-mem/transcript-watch.json`)
-4. **Qwen CLI** uses manual MCP entry (`~/.qwen/settings.json` + repo `.qwen/settings.json`)
-5. **Claude ecosystem** uses the same worker/service and memory store
+- Copilot CLI → MCP config
+- Gemini CLI → hooks + context file
+- Codex CLI → transcript watcher
+- Qwen CLI → manual MCP entry
+- Claude ecosystem → same worker/storage
 
-Result: context collected in one tool can be discovered/used by others.
+So your context doesn’t die every time you switch tools.
 
 ---
 
-## Quick start
+## Quick start (the no-drama version)
 
-## 1) Clone this repo
+### 1) Clone
 
 ```bash
 git clone https://github.com/Krishpotanwar/my-personal-vibe-coding-setup.git
 cd my-personal-vibe-coding-setup
 ```
 
-## 2) Install shared memory integrations
+### 2) Install shared memory integrations
 
 ```bash
 npx claude-mem install --ide copilot-cli
@@ -58,94 +80,94 @@ npx claude-mem install --ide gemini-cli
 npx claude-mem install --ide codex-cli
 ```
 
-## 3) Start the memory worker
+### 3) Start memory worker
 
 ```bash
 npx claude-mem start
 npx claude-mem status
 ```
 
-Default viewer: `http://localhost:37777`
+If it’s healthy, viewer is usually here:
 
-## 4) Add Qwen (manual)
+`http://localhost:37777`
 
-Add `mcpServers.claude-mem` to:
+### 4) Add Qwen manually (important)
+
+`claude-mem` currently doesn’t support `--ide qwen`, so add `mcpServers.claude-mem` in:
 
 - `~/.qwen/settings.json`
-- `<this-repo>/.qwen/settings.json` (already included here)
+- `<repo>/.qwen/settings.json` (already included here)
 
-See exact block in [`SHARED_MEMORY_SETUP.md`](./SHARED_MEMORY_SETUP.md).
+Use the exact JSON from [`SHARED_MEMORY_SETUP.md`](./SHARED_MEMORY_SETUP.md).
 
-## 5) Restart CLIs
+### 5) Restart all CLIs
 
-Restart Copilot CLI, Gemini CLI, Qwen CLI, and Codex CLI so configs/hooks are reloaded.
+Yes, actually restart them. Config changes won’t magically load themselves.
 
 ---
 
-## Detailed setup guide
+## Full guide
 
-Use the full guide:
+If you want the full “what gets written where” breakdown:
 
 - **[`SHARED_MEMORY_SETUP.md`](./SHARED_MEMORY_SETUP.md)**
 
 It includes:
 
-- installer behavior by CLI
-- verification checklist
-- troubleshooting (`Unknown IDE: qwen`, worker issues, MCP visibility)
-- operational/security notes
+- per-CLI install behavior
+- file-level verification checklist
+- troubleshooting for common failure modes
+- security/ops notes
 
 ---
 
-## Recommended local prerequisites
+## Prerequisites
 
-- Node.js **18+**
+- Node.js 18+
 - `npx`
-- `gh` (optional, for GitHub automation)
-- `uv` / `uvx` (for `code-review-graph` in `.mcp.json`)
-- `bun` (installed automatically by `claude-mem` when needed)
+- Optional but useful: `gh`, `uv` / `uvx`
+- `bun` (installed automatically by `claude-mem` if missing)
 
 ---
 
-## Security model for this repo
+## Known limitations (no fairy tales)
 
-This repository is intentionally sanitized:
+- Qwen is manual right now (no native `claude-mem --ide qwen`)
+- Absolute Node paths can differ machine-to-machine
+- CLI restart is required after config/hook changes
 
-- excludes local runtime logs/checkpoints
-- excludes machine-local sensitive config (`.claude/settings.local.json`)
-- keeps reusable setup/config docs only
-
-Sensitive values should always stay in:
-
-- local env vars
-- local untracked config
-- secret managers
-
-Never commit real API keys/tokens to this repo.
+Not catastrophic. Just real.
 
 ---
 
-## Maintenance workflow
+## Security notes
 
-## Update claude-mem
+This repo is designed to avoid leaking local-sensitive state, but still:
+
+- keep secrets in env vars or a secret manager
+- do not commit API keys/tokens
+- audit configs before making your own fork public
+
+Treat setup files like code. Because they are.
+
+---
+
+## Maintenance
+
+Update `claude-mem`:
 
 ```bash
 npx claude-mem update
-```
-
-Then restart worker:
-
-```bash
 npx claude-mem restart
 ```
 
-## Validate worker health
+Health check:
 
 ```bash
 npx claude-mem status
 ```
 
-## Re-apply integration after CLI changes
+If tools change behavior, re-run installers:
 
 ```bash
 npx claude-mem install --ide copilot-cli
@@ -155,17 +177,13 @@ npx claude-mem install --ide codex-cli
 
 ---
 
-## Notes on included toolchain
+## License note
 
-- `.mcp.json` includes `claude-flow` + `code-review-graph`
-- `.claude/` includes a large prebuilt agent/skill/command ecosystem for orchestration-heavy workflows
-- `.codex/config.toml` and `.qwen/settings.json` are tuned for this stack and can be adapted per machine
+This repo is my config/docs setup.
+
+`claude-mem` is a separate project under **AGPL-3.0**. If you use this in teams/commercial environments, do your normal license checks.
 
 ---
 
-## License and dependencies
-
-- This setup repo contains your configuration and documentation files.
-- `claude-mem` itself is licensed separately under **AGPL-3.0** by its author.
-- Review third-party tool licenses before using this setup in org/commercial environments.
+If this setup saves you even one afternoon of “why is this tool pretending it has amnesia,” mission accomplished.
 

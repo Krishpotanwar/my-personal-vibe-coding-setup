@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Studies on Smart Grid</title>
+  <style>
+    :root {
+      --bg-page: #0B0A09;
+      --slide-bg: #161412;
+      --text-primary: #EAE6E1;
+      --text-secondary: #A8A29E;
+      --accent-brown: #8B5A2B;
+      --accent-light: #B88655;
+      --border-color: #3A342F;
+      --table-header: #6B4423;
+      --font-main: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      line-height: 1.6;
+      overflow: hidden;
+    }
+
+    .slide-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 60px 80px;
+      display: none;
+      flex-direction: column;
+      justify-content: flex-start;
+      background: var(--slide-bg);
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    /* Strictly remove any background numbers */
+    .slide::before,
+    .slide::after {
+      display: none !important;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      color: var(--accent-light);
+      margin-bottom: 12px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    h2 {
+      font-size: 2rem;
+      color: var(--accent-brown);
+      margin-bottom: 18px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 1.4rem;
+      color: var(--accent-light);
+      margin: 16px 0 8px;
+    }
+
+    h4 {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    p,
+    li,
+    td,
+    th {
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+
+    ul {
+      padding-left: 22px;
+      margin-bottom: 12px;
+    }
+
+    li {
+      margin-bottom: 5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      background: #1C1917;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--border-color);
+      padding: 12px 14px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--table-header);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 12px;
+    }
+
+    .stat-box {
+      background: #221F1D;
+      padding: 18px;
+      border-left: 4px solid var(--accent-brown);
+      margin-bottom: 12px;
+    }
+
+    .stat-box strong {
+      color: var(--accent-light);
+      font-size: 1.15rem;
+    }
+
+    .divider {
+      border: 0;
+      height: 1px;
+      background: var(--border-color);
+      margin: 22px 0;
+    }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 20px 0;
+      font-size: 0.95rem;
+      color: var(--accent-light);
+    }
+
+    .tags span {
+      background: #2A2420;
+      padding: 6px 12px;
+      border-radius: 4px;
+    }
+
+    .nav-hint {
+      position: fixed;
+      bottom: 18px;
+      right: 24px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="slide-container">
+
+    <!-- SLIDE 1: Title -->
+    <section class="slide active">
+      <h4>Presentation · Case Studies</h4>
+      <h1>Case Studies on Smart Grid</h1>
+      <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 850px;">How electricity infrastructure got
+        its brain — and what four real deployments show about what works, what doesn't, and why.</p>
+      <div class="tags">
+        <span>Tesla VPP — Australia</span>
+        <span>Xcel SmartGridCity</span>
+        <span>India RDSS / TPDDL</span>
+        <span>PG&E SmartMeter</span>
+      </div>
+      <p class="source-note">Sources: AEMO · Colorado PUC · Ministry of Power India · CPUC · Neoen Annual Reports</p>
+    </section>
+
+    <!-- SLIDE 2: Foundation -->
+    <section class="slide">
+      <h2>Foundation: What is a smart grid?</h2>
+      <p>The traditional grid works in one direction — power plants generate, wires carry, homes consume. Nobody knows
+        real-time usage until the meter reader visits once a month.</p>
+      <p>A smart grid adds two-way communication. Sensors, smart meters, and control software let the grid see itself in
+        real time — automatically absorbing rooftop solar, shifting loads during stress, and dispatching batteries in
+        milliseconds.</p>
+      <p><strong style="color:var(--accent-light)">Key insight:</strong> Grids built for large coal and gas plants can't
+        handle millions of small, variable solar and wind sources. Smart grid technology is what makes the clean energy
+        transition physically possible.</p>
+
+      <h3>Four core components</h3>
+      <div class="grid-2">
+        <div class="stat-box"><strong>AMI — Advanced Metering Infrastructure</strong><br>Smart meters sending 15-min
+          usage data. Foundation for everything else.</div>
+        <div class="stat-box"><strong>DMS / SCADA</strong><br>Real-time network visibility. Outages detected in 3 min
+          instead of 45 min.</div>
+        <div class="stat-box"><strong>Demand Response</strong><br>Smart thermostats and loads turned down during grid
+          stress. Cheaper than a peaker plant.</div>
+        <div class="stat-box"><strong>BESS / Virtual Power Plants</strong><br>Grid-scale or aggregated home batteries.
+          Respond faster than any gas turbine.</div>
+      </div>
+      <p class="source-note">140 ms Hornsdale battery response vs 6–10 sec for gas turbines · 53%→7% TPDDL Delhi: AT&C
+        loss reduction over 18 years · 3× Budget overrun — Xcel SmartGridCity, Boulder CO · 9.9 M Smart meters deployed
+        by PG&E across California</p>
+    </section>
+
+    <!-- SLIDE 3: Case Studies 01 & 02 -->
+    <section class="slide">
+      <h2>Case Studies 01 & 02: Tesla Virtual Power Plant & Xcel SmartGridCity</h2>
+
+      <h3>Hornsdale, South Australia — 2017</h3>
+      <p>After a 2016 statewide blackout left 1.76 million people without power, SA built a 100 MW / 129 MWh Tesla
+        battery next to a wind farm. Commissioned December 2017.</p>
+      <div class="grid-2">
+        <div class="stat-box"><strong>140ms</strong> Response vs 6–10 sec gas</div>
+        <div class="stat-box"><strong>90%</strong> Cut in SAFCAS market cost</div>
+      </div>
+      <div class="stat-box"><strong>AUD 150M</strong> Savings in first 2.5 years</div>
+      <p>Feb 2018 real test: A Victorian generator tripped, dropping 560 MW. Hornsdale responded in 140 ms — before any
+        gas turbine could react. Frequency collapse stopped.</p>
+      <p class="source-note">Source: AEMO 2018 · Neoen Annual Reports · Aurecon/Neoen HPR Review</p>
+
+      <hr class="divider">
+
+      <h3>Boulder, Colorado — 2008</h3>
+      <p>Xcel Energy promised the "world's first smart grid city." Smart meters, in-home displays, EV charging,
+        renewables — all for $15 million by 2011.</p>
+      <div class="grid-2">
+        <div class="stat-box"><strong>$44.5M</strong> Final cost vs $15M planned</div>
+        <div class="stat-box"><strong>3×</strong> Budget overrun</div>
+      </div>
+      <div class="stat-box"><strong>700</strong> In-home displays adopted vs 1,000s</div>
+      <p>Colorado PUC disallowed ~$27.9M from ratepayer recovery — Xcel shareholders absorbed the loss.
+        <strong>Lesson:</strong> consumer engagement must be funded as seriously as hardware.</p>
+      <p class="source-note">Source: Colorado PUC Docket 09A-427EG, Decision C10-0666</p>
+    </section>
+
+    <!-- SLIDE 4: Case Study 03 -->
+    <section class="slide">
+      <h2>Case Study 03 — India: Smart Grid Mission & TPDDL Delhi</h2>
+
+      <h3>RDSS — Rs 3,03,758 Cr scheme, 2021</h3>
+      <p>India's grid problem is AT&C losses — electricity generated but either lost to a leaking wire or stolen and
+        never billed. National average in 2020–21: 22.2%. That's 1 in 5 units never becoming revenue.</p>
+      <p>RDSS (~USD 36.5B) targets 250 million smart prepaid meters and feeder separation to fix this.</p>
+      <div class="grid-2">
+        <div class="stat-box"><strong>250M</strong> Target smart meters by 2026</div>
+        <div class="stat-box"><strong>13.5M</strong> Actually installed by Dec 2023</div>
+      </div>
+      <div class="stat-box"><strong>17.1%</strong> AT&C loss FY 2022–23</div>
+      <p>5% deployment against target by end-2023. Bottleneck: domestic manufacturing capacity and last-mile
+        communication infrastructure — not money or political will.</p>
+
+      <hr class="divider">
+
+      <h3>TPDDL Delhi — 2002 to present</h3>
+      <p>When Tata Power took over North Delhi distribution in 2002, losses were 53%. Two decades of smart grid work
+        later:</p>
+      <div class="grid-2">
+        <div class="stat-box"><strong>53% → 7.2%</strong> AT&C loss (2002 baseline to 2019–20)</div>
+        <div class="stat-box"><strong>10×</strong> SAIDI improved (8 hrs → 0.72 hrs/yr)</div>
+      </div>
+      <h4>How they did it</h4>
+      <ul>
+        <li>250,000+ smart meters deployed from 2007–08; full SCADA on 11kV network</li>
+        <li>Online transformer monitoring — 30–40% fewer failures</li>
+        <li>Anti-theft detection baked into smart metering — biggest single driver</li>
+      </ul>
+      <p><strong>Lesson:</strong> Technology was the enabler — not the sole cause. Operational culture and billing
+        enforcement mattered equally.</p>
+    </section>
+
+    <!-- SLIDE 5: Case Study 04 -->
+    <section class="slide">
+      <h2>Case Study 04: PG&E SmartMeter — California, 2006–2014</h2>
+
+      <h3>The rollout</h3>
+      <p>PG&E deployed 9.9 million smart electric meters across California — one of the largest AMI rollouts in US
+        history. Total cost: $2.2 billion.</p>
+      <div class="grid-2">
+        <div class="stat-box"><strong>9.9M</strong> Smart meters deployed</div>
+        <div class="stat-box"><strong>$2.2B</strong> Total program cost</div>
+      </div>
+
+      <h3>The backlash — 2010</h3>
+      <p>Installations hit San Joaquin Valley in hot summer 2009. Bills spiked. Customers blamed the meters. Bakersfield
+        voted to ban installations.</p>
+      <p>CPUC found: Meters were accurate. Bills rose from a heat wave + tiered rates + a rate increase. PG&E's real
+        failure: they told customers nothing about the swap or how tiered pricing worked.</p>
+
+      <h3>What actually worked</h3>
+      <ul>
+        <li>Outage detection: 45 min → 3–5 min via automated meter signals</li>
+        <li>Theft recovery: ~$96 million recovered in first few years</li>
+        <li>Operational savings: $47–60 million/year — no more manual reads</li>
+        <li>Peak demand: SmartAC program cut ~600 MW on hot summer afternoons</li>
+      </ul>
+
+      <h3>What it triggered</h3>
+      <ul>
+        <li>First US state smart meter privacy rules — CPUC July 2011</li>
+        <li>First formal opt-out program — $75 upfront + $10/month</li>
+        <li>Programme was roughly NPV break-even — $1.0–1.5B benefits vs $2.2B cost</li>
+      </ul>
+      <p><strong>Lesson:</strong> Hardware worked fine. Communication strategy failed — and set back smart meter
+        adoption nationally for years.</p>
+    </section>
+
+    <!-- SLIDE 6: Conclusion -->
+    <section class="slide">
+      <h2>Conclusion</h2>
+
+      <h3>Three things four case studies prove</h3>
+      <div class="grid-2">
+        <div class="stat-box"><strong>01 Grid-scale storage is proven</strong><br>Hornsdale saved AUD 150M in 2.5 years
+          and responded in 140 ms. The business case is in audited financial statements — not projections.</div>
+        <div class="stat-box"><strong>02 Technology is the easy part</strong><br>Xcel's hardware worked. PG&E's meters
+          were accurate. Both failed on the human side — communication, change management, and realistic planning.</div>
+      </div>
+      <div class="stat-box"><strong>03 Loss reduction = India's killer app</strong><br>TPDDL proved smart metering pays
+        for itself through recovered revenue in high-theft markets. India's RDSS has the right idea — 250M meters at
+        scale is the challenge.</div>
+
+      <hr class="divider">
+
+      <h3>What's next</h3>
+      <ul>
+        <li>Vehicle-to-Grid — every EV as a dispatchable battery</li>
+        <li>AI forecasting — predict solar/wind 4–6 hrs ahead</li>
+        <li>5G replacing aging SCADA radio links at substations</li>
+      </ul>
+
+      <h3>Unsolved problems</h3>
+      <ul>
+        <li>Cybersecurity — Ukraine grid attacks (2015, 2016) showed the risk</li>
+        <li>Privacy — 15-min interval data reveals when you're home or away</li>
+        <li>Interoperability — incompatible protocols strand installed hardware</li>
+      </ul>
+
+      <p class="source-note">Sources: AEMO · Neoen Annual Reports · Colorado PUC · CPUC · Ministry of Power India ·
+        TPDDL Annual Reports · Aurecon/Neoen HPR Review</p>
+    </section>
+
+  </div>
+  <div class="nav-hint">← → or Space to navigate</div>
+
+  <script>
+    let current = 0;
+    const slides = document.querySelectorAll('.slide');
+    function show(n) {
+      slides[current].classList.remove('active');
+      current = (n + slides.length) % slides.length;
+      slides[current].classList.add('active');
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ') show(current + 1);
+      if (e.key === 'ArrowLeft') show(current - 1);
+    });
+  </script>
+</body>
+
+</html>

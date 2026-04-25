@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Case Studies on Smart Grid</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #FFF8F0;
+      --surf:   #FFF3E8;
+      --card:   #FAEEDD;
+      --bdr:    rgba(192,133,82,.22);
+      --p1:     #C08552;   /* copper */
+      --p2:     #8C5A3C;   /* dark brown */
+      --p3:     #FAD8B0;   /* warm cream */
+      --p4:     #FFF0DC;   /* lightest warm */
+      --dark:   #4B2E2B;   /* very dark brown */
+      --mid:    #6B4428;   /* warm mid brown */
+      --muted:  #A07850;   /* warm medium brown */
+      --text:   #5A3530;   /* warm body text */
+    }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--dark);
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      cursor: none;
+    }
+
+    /* click zones */
+    #zl, #zr { position: fixed; top: 0; bottom: 0; width: 50%; z-index: 300; cursor: none; }
+    #zl { left: 0; } #zr { right: 0; }
+
+    /* cursor */
+    #cur { position: fixed; pointer-events: none; z-index: 400; font-size: 22px;
+      color: rgba(192,133,82,.35); transform: translate(-50%,-50%); user-select: none;
+      transition: opacity .3s; }
+
+    /* dots */
+    #dots { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 9px; z-index: 200; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--bdr);
+      transition: background .7s, transform .7s; }
+    .dot.on { transform: scale(1.5); }
+
+    /* morph layer */
+    #morph { position: fixed; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
+    #m-n { position: absolute; font-weight: 900; line-height: 1; letter-spacing: -.06em;
+      transition: all 1.1s cubic-bezier(.4,0,.2,1); white-space: nowrap; }
+    #m-l { position: absolute; transition: all 1.1s cubic-bezier(.4,0,.2,1); }
+    #m-d { position: absolute; border-radius: 50%; transition: all 1.0s cubic-bezier(.4,0,.2,1); }
+    #m-r { position: absolute; border-radius: 16px; transition: all 1.1s cubic-bezier(.4,0,.2,1); }
+
+    /* slides */
+    #wrap { position: fixed; inset: 0; overflow: hidden; }
+    .slide { position: absolute; inset: 0; padding: 52px 72px 44px;
+      display: none; flex-direction: column; justify-content: center; z-index: 10; }
+    .slide.on { display: flex; animation: up .55s cubic-bezier(.4,0,.2,1) forwards; }
+    @keyframes up {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* type */
+    .eye { font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px; }
+    h2   { font-size: clamp(26px, 3vw, 42px); font-weight: 700; line-height: 1.1;
+      letter-spacing: -.025em; margin-bottom: 24px; color: var(--dark); }
+    h3   { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px; }
+    p    { font-size: clamp(12.5px, 1.2vw, 14.5px); line-height: 1.75; color: var(--text); }
+
+    .c1 { color: var(--p1); }
+    .c2 { color: var(--p2); }
+    .c3 { color: var(--p3); }
+    .c4 { color: var(--mid); }
+    .cm { color: var(--muted); }
+
+    /* layout */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; flex: 1; min-height: 0; }
+    .col-l   { }
+    .col-r   { }
+    .vd      { display: none; }
+    .two     { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .three   { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+    hr       { border: none; border-top: 1px solid var(--bdr); margin: 16px 0; }
+
+    /* cards */
+    .card  { background: var(--card); border: 1px solid var(--bdr); border-radius: 10px; padding: 18px; }
+    .card-p1 { border-color: rgba(192,133,82,.4);  background: rgba(192,133,82,.06); }
+    .card-p2 { border-color: rgba(140,90,60,.4);   background: rgba(140,90,60,.06);  }
+    .card-p3 { border-color: rgba(192,133,82,.3);  background: rgba(250,238,220,.5); }
+    .card-p4 { border-color: rgba(140,90,60,.2);   background: rgba(255,248,240,.8); }
+
+    /* stats */
+    .snum { font-size: clamp(26px, 3.2vw, 48px); font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+    .slbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--muted); margin-top: 5px; line-height: 1.4; }
+    .srow { display: flex; gap: 8px; margin: 14px 0; }
+    .sb   { flex: 1; background: var(--surf); border: 1px solid var(--bdr); border-radius: 8px; padding: 13px 10px; }
+
+    /* callout */
+    .note { border-left: 3px solid var(--p1); padding: 12px 16px;
+      background: rgba(192,133,82,.07); border-radius: 0 8px 8px 0; margin: 12px 0; }
+    .note.n2 { border-color: var(--p2); background: rgba(140,90,60,.07); }
+    .note.n3 { border-color: var(--p2); background: rgba(250,238,220,.5);  }
+    .note.n4 { border-color: var(--p1); background: rgba(192,133,82,.05);  }
+    .note p  { font-size: 13px; color: var(--text); }
+
+    /* list */
+    ul.bl { list-style: none; }
+    ul.bl li { font-size: 13.5px; line-height: 1.65; color: var(--text);
+      padding: 7px 0 7px 20px; position: relative; border-bottom: 1px solid var(--bdr); }
+    ul.bl li:last-child { border-bottom: none; }
+    ul.bl li::before { content: '›'; position: absolute; left: 0; font-size: 18px; line-height: 1.25; color: var(--p1); }
+    .bl.b2 li::before { color: var(--p2); }
+    .bl.b3 li::before { color: var(--mid); }
+
+    /* badge */
+    .badge { display: inline-flex; align-items: center; gap: 7px; font-size: 10px;
+      letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; margin-bottom: 12px; }
+    .bdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* tag */
+    .tag { display: inline-block; font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 20px; margin-right: 6px; margin-bottom: 7px; font-weight: 600; }
+    .tg1 { background: rgba(192,133,82,.15); color: #C08552; border: 1px solid rgba(192,133,82,.35); }
+    .tg2 { background: rgba(140,90,60,.12);  color: #8C5A3C; border: 1px solid rgba(140,90,60,.3);  }
+    .tg3 { background: rgba(255,248,240,.8); color: #6B4428; border: 1px solid rgba(192,133,82,.25); }
+    .tg4 { background: rgba(75,46,43,.08);   color: #4B2E2B; border: 1px solid rgba(75,46,43,.2);   }
+
+    /* slide 1 */
+    .s1 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+    .s1 h1 { font-size: clamp(50px, 7vw, 86px); font-weight: 800; line-height: 1.0; letter-spacing: -.04em; color: var(--dark); }
+    .s1 .sub { font-size: clamp(13px, 1.4vw, 17px); color: var(--muted); margin-top: 14px; line-height: 1.65; }
+    .hstat { background: var(--surf); border: 1px solid var(--bdr); border-radius: 10px;
+      padding: 15px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+    .hstat .n { font-size: 24px; font-weight: 800; letter-spacing: -.03em; min-width: 86px; }
+    .hstat .l { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+    /* lesson card */
+    .lcard { border-radius: 12px; padding: 22px; }
+    .lnum  { font-size: 50px; font-weight: 900; letter-spacing: -.05em; line-height: 1; margin-bottom: 8px; opacity: .2; }
+  </style>
+</head>
+<body>
+
+<div id="zl" onclick="go(-1)"></div>
+<div id="zr" onclick="go(1)"></div>
+<div id="cur">‹</div>
+
+<div id="morph">
+  <div id="m-n"></div><div id="m-l"></div><div id="m-d"></div><div id="m-r"></div>
+</div>
+<div id="dots"></div>
+
+<div id="wrap">
+
+  <!-- ════ SLIDE 1 — TITLE ════ -->
+  <div class="slide on">
+    <p class="eye">Presentation · Case Studies</p>
+    <div class="s1">
+      <div>
+        <h1>Smart<br><span class="c1">Grid</span></h1>
+        <p class="sub">How electricity infrastructure got its brain — and what four real deployments show about what works, what doesn't, and why.</p>
+        <div style="margin-top:22px;">
+          <span class="tag tg1">Tesla VPP — Australia</span>
+          <span class="tag tg2">Xcel SmartGridCity</span>
+          <span class="tag tg3">India RDSS / TPDDL</span>
+          <span class="tag tg4">PG&amp;E SmartMeter</span>
+        </div>
+        <p style="font-size:10px; color:var(--muted); margin-top:14px;">AEMO · Colorado PUC · Ministry of Power India · CPUC · Neoen Annual Reports</p>
+      </div>
+      <div>
+        <div class="hstat"><div class="n c1">140 ms</div><div class="l">Hornsdale battery response<br>vs 6–10 sec for gas turbines</div></div>
+        <div class="hstat"><div class="n" style="color:#8C5A3C;">53%→7%</div><div class="l">TPDDL Delhi: AT&amp;C loss<br>reduction over 18 years</div></div>
+        <div class="hstat"><div class="n c2">3×</div><div class="l">Budget overrun — Xcel<br>SmartGridCity, Boulder CO</div></div>
+        <div class="hstat"><div class="n" style="color:#6B4428;">9.9 M</div><div class="l">Smart meters deployed by<br>PG&amp;E across California</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ SLIDE 2 — WHAT IS A SMART GRID ════ -->
+  <div class="slide">
+    <p class="eye">Foundation</p>
+    <h2>What is a smart grid?</h2>
+    <div class="two-col">
+      <div class="col-l">
+        <p style="margin-bottom:16px;">The traditional grid works in one direction — power plants generate, wires carry, homes consume. Nobody knows real-time usage until the meter reader visits once a month.</p>
+        <p style="margin-bottom:16px;">A smart grid adds <strong>two-way communication</strong>. Sensors, smart meters, and control software let the grid see itself in real time — automatically absorbing rooftop solar, shifting loads during stress, and dispatching batteries in milliseconds.</p>
+        <div class="note n2">
+          <p><strong>Key insight:</strong> Grids built for large coal and gas plants can't handle millions of small, variable solar and wind sources. Smart grid technology is what makes the clean energy transition <em>physically possible</em>.</p>
+        </div>
+      </div>
+      <div class="vd"></div>
+      <div class="col-r">
+        <h3 style="margin-bottom:14px;">Four core components</h3>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="card card-p1">
+            <span class="c1" style="font-weight:700; font-size:13px;">AMI — Advanced Metering Infrastructure</span>
+            <p style="font-size:13px; margin-top:5px;">Smart meters sending 15-min usage data. Foundation for everything else.</p>
+          </div>
+          <div class="card card-p2">
+            <span style="font-weight:700; font-size:13px; color:#8C5A3C;">DMS / SCADA</span>
+            <p style="font-size:13px; margin-top:5px;">Real-time network visibility. Outages detected in 3 min instead of 45 min.</p>
+          </div>
+          <div class="card card-p3">
+            <span style="font-weight:700; font-size:13px; color:#6B4428;">Demand Response</span>
+            <p style="font-size:13px; margin-top:5px;">Smart thermostats and loads turned down during grid stress. Cheaper than a peaker plant.</p>
+          </div>
+          <div class="card card-p4">
+            <span style="font-weight:700; font-size:13px; color:#4B2E2B;">BESS / Virtual Power Plants</span>
+            <p style="font-size:13px; margin-top:5px;">Grid-scale or aggregated home batteries. Respond faster than any gas turbine.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ SLIDE 3 — TESLA VPP + XCEL ════ -->
+  <div class="slide">
+    <p class="eye">Case Studies 01 &amp; 02</p>
+    <h2>Tesla Virtual Power Plant &amp; Xcel SmartGridCity</h2>
+    <div class="two-col">
+      <div class="col-l">
+        <div class="badge"><span class="bdot" style="background:var(--p1)"></span><span class="c1">Hornsdale, South Australia — 2017</span></div>
+        <p style="margin-bottom:14px;">After a 2016 statewide blackout left 1.76 million people without power, SA built a 100 MW / 129 MWh Tesla battery next to a wind farm. Commissioned December 2017.</p>
+        <div class="srow">
+          <div class="sb"><div class="snum c1">140ms</div><div class="slbl">Response vs<br>6–10 sec gas</div></div>
+          <div class="sb"><div class="snum c1">90%</div><div class="slbl">Cut in SA<br>FCAS market cost</div></div>
+          <div class="sb"><div class="snum c1">AUD 150M</div><div class="slbl">Savings in<br>first 2.5 years</div></div>
+        </div>
+        <div class="note">
+          <p><strong>Feb 2018 real test:</strong> A Victorian generator tripped, dropping 560 MW. Hornsdale responded in 140 ms — before any gas turbine could react. Frequency collapse stopped.</p>
+        </div>
+        <p style="font-size:11px; color:var(--muted); margin-top:8px;">Source: AEMO 2018 · Neoen Annual Reports · Aurecon/Neoen HPR Review</p>
+      </div>
+      <div class="vd"></div>
+      <div class="col-r">
+        <div class="badge"><span class="bdot" style="background:var(--p2)"></span><span style="color:#8C5A3C;">Boulder, Colorado — 2008</span></div>
+        <p style="margin-bottom:14px;">Xcel Energy promised the "world's first smart grid city." Smart meters, in-home displays, EV charging, renewables — all for $15 million by 2011.</p>
+        <div class="srow">
+          <div class="sb"><div class="snum c2">$44.5M</div><div class="slbl">Final cost vs<br>$15M planned</div></div>
+          <div class="sb"><div class="snum c2">3×</div><div class="slbl">Budget<br>overrun</div></div>
+          <div class="sb"><div class="snum c2">700</div><div class="slbl">In-home displays<br>adopted vs 1,000s</div></div>
+        </div>
+        <div class="note n2">
+          <p>Colorado PUC disallowed ~$27.9M from ratepayer recovery — Xcel shareholders absorbed the loss. <strong>Lesson: consumer engagement must be funded as seriously as hardware.</strong></p>
+        </div>
+        <p style="font-size:11px; color:var(--muted); margin-top:8px;">Source: Colorado PUC Docket 09A-427EG, Decision C10-0666</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ SLIDE 4 — INDIA ════ -->
+  <div class="slide">
+    <p class="eye">Case Study 03 — India</p>
+    <h2>India's Smart Grid Mission &amp; TPDDL Delhi</h2>
+    <div class="two-col">
+      <div class="col-l">
+        <div class="badge"><span class="bdot" style="background:#8C5A3C"></span><span style="color:#6B4428; letter-spacing:1.5px; font-size:10px; text-transform:uppercase; font-weight:700;">RDSS — Rs 3,03,758 Cr scheme, 2021</span></div>
+        <p style="margin-bottom:14px;">India's grid problem is AT&C losses — electricity generated but either lost to a leaking wire or stolen and never billed. National average in 2020–21: <strong>22.2%</strong>. That's 1 in 5 units never becoming revenue.</p>
+        <p style="margin-bottom:14px;">RDSS (~USD 36.5B) targets 250 million smart prepaid meters and feeder separation to fix this.</p>
+        <div class="srow">
+          <div class="sb"><div class="snum" style="color:#6B4428;">250M</div><div class="slbl">Target smart<br>meters by 2026</div></div>
+          <div class="sb"><div class="snum" style="color:#6B4428;">13.5M</div><div class="slbl">Actually installed<br>by Dec 2023</div></div>
+          <div class="sb"><div class="snum" style="color:#6B4428;">17.1%</div><div class="slbl">AT&amp;C loss<br>FY 2022–23</div></div>
+        </div>
+        <div class="note n3">
+          <p>5% deployment against target by end-2023. Bottleneck: domestic manufacturing capacity and last-mile communication infrastructure — not money or political will.</p>
+        </div>
+      </div>
+      <div class="vd"></div>
+      <div class="col-r">
+        <div class="badge"><span class="bdot" style="background:var(--p1)"></span><span class="c1">TPDDL Delhi — 2002 to present</span></div>
+        <p style="margin-bottom:14px;">When Tata Power took over North Delhi distribution in 2002, losses were 53%. Two decades of smart grid work later:</p>
+        <div class="srow">
+          <div class="sb"><div class="snum c1">53%</div><div class="slbl">AT&amp;C loss<br>2002 baseline</div></div>
+          <div class="sb"><div class="snum c1">7.2%</div><div class="slbl">AT&amp;C loss<br>2019–20</div></div>
+          <div class="sb"><div class="snum c1">10×</div><div class="slbl">SAIDI improved<br>8 hrs → 0.72 hrs/yr</div></div>
+        </div>
+        <h3>How they did it</h3>
+        <ul class="bl">
+          <li>250,000+ smart meters deployed from 2007–08; full SCADA on 11kV network</li>
+          <li>Online transformer monitoring — 30–40% fewer failures</li>
+          <li>Anti-theft detection baked into smart metering — biggest single driver</li>
+        </ul>
+        <div class="note n4" style="margin-top:10px;">
+          <p style="font-size:12px;">Technology was the enabler — not the sole cause. Operational culture and billing enforcement mattered equally.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ SLIDE 5 — PG&E ════ -->
+  <div class="slide">
+    <p class="eye">Case Study 04</p>
+    <h2>PG&amp;E SmartMeter — California, 2006–2014</h2>
+    <div class="two-col">
+      <div class="col-l">
+        <div class="badge"><span class="bdot" style="background:#6B4428"></span><span style="color:#6B4428; letter-spacing:1.5px; font-size:10px; text-transform:uppercase; font-weight:700;">The rollout</span></div>
+        <p style="margin-bottom:16px;">PG&E deployed 9.9 million smart electric meters across California — one of the largest AMI rollouts in US history. Total cost: <strong>$2.2 billion</strong>.</p>
+        <div class="srow">
+          <div class="sb"><div class="snum" style="color:#6B4428;">9.9M</div><div class="slbl">Smart meters<br>deployed</div></div>
+          <div class="sb"><div class="snum" style="color:#6B4428;">$2.2B</div><div class="slbl">Total program<br>cost</div></div>
+        </div>
+        <div class="badge" style="margin-top:4px;"><span class="bdot" style="background:var(--p1)"></span><span class="c1">The backlash — 2010</span></div>
+        <p style="margin-bottom:12px;">Installations hit San Joaquin Valley in hot summer 2009. Bills spiked. Customers blamed the meters. Bakersfield voted to ban installations.</p>
+        <div class="note">
+          <p><strong>CPUC found:</strong> Meters were accurate. Bills rose from a heat wave + tiered rates + a rate increase. PG&E's real failure: they told customers <em>nothing</em> about the swap or how tiered pricing worked.</p>
+        </div>
+      </div>
+      <div class="vd"></div>
+      <div class="col-r">
+        <div class="badge"><span class="bdot" style="background:var(--p2)"></span><span style="color:#8C5A3C; letter-spacing:1.5px; font-size:10px; text-transform:uppercase; font-weight:700;">What actually worked</span></div>
+        <ul class="bl b2" style="margin-bottom:18px;">
+          <li>Outage detection: 45 min → 3–5 min via automated meter signals</li>
+          <li>Theft recovery: ~$96 million recovered in first few years</li>
+          <li>Operational savings: $47–60 million/year — no more manual reads</li>
+          <li>Peak demand: SmartAC program cut ~600 MW on hot summer afternoons</li>
+        </ul>
+        <div class="badge"><span class="bdot" style="background:#8C5A3C"></span><span style="color:#6B4428; letter-spacing:1.5px; font-size:10px; text-transform:uppercase; font-weight:700;">What it triggered</span></div>
+        <ul class="bl b3">
+          <li>First US state smart meter <strong>privacy rules</strong> — CPUC July 2011</li>
+          <li>First formal <strong>opt-out program</strong> — $75 upfront + $10/month</li>
+          <li>Programme was roughly <strong>NPV break-even</strong> — $1.0–1.5B benefits vs $2.2B cost</li>
+        </ul>
+        <div class="note n3" style="margin-top:10px;">
+          <p>Hardware worked fine. Communication strategy failed — and set back smart meter adoption nationally for years.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ SLIDE 6 — CONCLUSION ════ -->
+  <div class="slide">
+    <p class="eye">Conclusion</p>
+    <h2>Three things four case studies prove</h2>
+    <div class="three" style="margin-bottom:18px;">
+      <div class="lcard" style="background:rgba(192,133,82,.1); border:1px solid rgba(192,133,82,.3);">
+        <div class="lnum c1">01</div>
+        <h3 class="c1" style="margin-bottom:10px;">Grid-scale storage is proven</h3>
+        <p style="font-size:13.5px;">Hornsdale saved AUD 150M in 2.5 years and responded in 140 ms. The business case is in audited financial statements — not projections.</p>
+      </div>
+      <div class="lcard" style="background:rgba(140,90,60,.1); border:1px solid rgba(140,90,60,.3);">
+        <div class="lnum" style="color:var(--p2); opacity:.3;">02</div>
+        <h3 style="color:#8C5A3C; margin-bottom:10px;">Technology is the easy part</h3>
+        <p style="font-size:13.5px;">Xcel's hardware worked. PG&E's meters were accurate. Both failed on the human side — communication, change management, and realistic planning.</p>
+      </div>
+      <div class="lcard" style="background:rgba(255,248,240,.9); border:1px solid rgba(192,133,82,.2);">
+        <div class="lnum" style="color:#8C5A3C; opacity:.3;">03</div>
+        <h3 style="color:#6B4428; margin-bottom:10px;">Loss reduction = India's killer app</h3>
+        <p style="font-size:13.5px;">TPDDL proved smart metering pays for itself through recovered revenue in high-theft markets. India's RDSS has the right idea — 250M meters at scale is the challenge.</p>
+      </div>
+    </div>
+    <hr>
+    <div class="two" style="margin-top:14px;">
+      <div>
+        <h3 style="color:var(--p1); margin-bottom:10px;">What's next</h3>
+        <ul class="bl">
+          <li>Vehicle-to-Grid — every EV as a dispatchable battery</li>
+          <li>AI forecasting — predict solar/wind 4–6 hrs ahead</li>
+          <li>5G replacing aging SCADA radio links at substations</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color:#6B4428; margin-bottom:10px;">Unsolved problems</h3>
+        <ul class="bl b2">
+          <li>Cybersecurity — Ukraine grid attacks (2015, 2016) showed the risk</li>
+          <li>Privacy — 15-min interval data reveals when you're home or away</li>
+          <li>Interoperability — incompatible protocols strand installed hardware</li>
+        </ul>
+      </div>
+    </div>
+    <p style="font-size:10px; color:var(--muted); margin-top:14px;">AEMO · Neoen Annual Reports · Colorado PUC · CPUC · Ministry of Power India · TPDDL Annual Reports · Aurecon/Neoen HPR Review</p>
+  </div>
+
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const TOTAL  = slides.length;
+  const COLORS = ['#C08552','#8C5A3C','#C08552','#8C5A3C','#C08552','#8C5A3C'];
+  let cur = 0;
+
+  /* dots */
+  const dotsEl = document.getElementById('dots');
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' on' : '');
+    dotsEl.appendChild(d);
+  }
+
+  /* cursor */
+  const curEl = document.getElementById('cur');
+  document.addEventListener('mousemove', e => {
+    curEl.style.left = e.clientX + 'px';
+    curEl.style.top  = e.clientY + 'px';
+    const left = e.clientX < window.innerWidth / 2;
+    curEl.textContent = left ? '‹' : '›';
+    const edge = (cur === 0 && left) || (cur === TOTAL - 1 && !left);
+    curEl.style.opacity = edge ? '0.06' : '0.35';
+  });
+
+  /* navigate */
+  function go(dir) {
+    const nx = cur + dir;
+    if (nx < 0 || nx >= TOTAL) return;
+    slides[cur].classList.remove('on');
+    cur = nx;
+    slides[cur].classList.add('on');
+    applyMorph(cur);
+    sync();
+  }
+
+  function sync() {
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('on', i === cur);
+      d.style.background = i === cur ? COLORS[cur] : 'var(--bdr)';
+    });
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key==='ArrowRight'||e.key===' '||e.key==='ArrowDown') go(1);
+    if (e.key==='ArrowLeft' ||e.key==='ArrowUp') go(-1);
+  });
+
+  /* morph states — same shape names morph between slides */
+  const MS = [
+    { n:{t:'01',l:'54vw',top:'4vh', fs:'320px',op:'0.06'},
+      l:{l:'0',  top:'89%',w:'100%', h:'3px',  op:'1' },
+      d:{l:'52px',top:'52px',w:'11px',h:'11px', op:'1' },
+      r:{l:'47vw',top:'3vh', w:'51vw',h:'88vh', op:'0.07'} },
+
+    { n:{t:'02',l:'-1vw',top:'-2vh',fs:'210px',op:'0.06'},
+      l:{l:'0',  top:'0',  w:'3px',  h:'100%', op:'1' },
+      d:{l:'93vw',top:'80vh',w:'8px', h:'8px',  op:'0.6'},
+      r:{l:'3vw',top:'8vh', w:'93vw',h:'75vh', op:'0.05'} },
+
+    { n:{t:'03',l:'26vw',top:'2vh', fs:'350px',op:'0.05'},
+      l:{l:'49%',top:'8%', w:'2px',  h:'83%',  op:'1' },
+      d:{l:'26px',top:'50vh',w:'6px', h:'6px',  op:'0.5'},
+      r:{l:'4vw',top:'10vh',w:'91vw',h:'71vh', op:'0.04'} },
+
+    { n:{t:'04',l:'59vw',top:'22vh',fs:'265px',op:'0.06'},
+      l:{l:'0',  top:'0',  w:'43%',  h:'3px',  op:'1' },
+      d:{l:'44vw',top:'12px',w:'9px', h:'9px',  op:'1' },
+      r:{l:'50vw',top:'4vh', w:'47vw',h:'88vh', op:'0.06'} },
+
+    { n:{t:'05',l:'-2vw',top:'10vh',fs:'285px',op:'0.05'},
+      l:{l:'98%',top:'0',  w:'2px',  h:'100%', op:'1' },
+      d:{l:'49vw',top:'87vh',w:'11px',h:'11px', op:'0.7'},
+      r:{l:'2vw',top:'7vh', w:'55vw',h:'80vh', op:'0.04'} },
+
+    { n:{t:'06',l:'19vw',top:'15vh',fs:'345px',op:'0.05'},
+      l:{l:'0',  top:'85%',w:'56%',  h:'2px',  op:'1' },
+      d:{l:'59vw',top:'85%', w:'10px',h:'10px', op:'0.8'},
+      r:{l:'0',  top:'0',  w:'100vw',h:'88vh', op:'0.04'} },
+  ];
+
+  function applyMorph(i) {
+    const s = MS[i], c = COLORS[i];
+    const n = document.getElementById('m-n');
+    const l = document.getElementById('m-l');
+    const d = document.getElementById('m-d');
+    const r = document.getElementById('m-r');
+
+    n.textContent = s.n.t;
+    Object.assign(n.style, { left:s.n.l, top:s.n.top, fontSize:s.n.fs, opacity:s.n.op, color:c });
+    Object.assign(l.style, { left:s.l.l, top:s.l.top, width:s.l.w, height:s.l.h, opacity:s.l.op,
+      background:c, borderRadius:'2px' });
+    Object.assign(d.style, { left:s.d.l, top:s.d.top, width:s.d.w, height:s.d.h, opacity:s.d.op,
+      background:c, boxShadow:`0 0 14px ${c}` });
+    Object.assign(r.style, { left:s.r.l, top:s.r.top, width:s.r.w, height:s.r.h, opacity:s.r.op,
+      background:`radial-gradient(ellipse at center, ${c}25 0%, transparent 65%)`, border:'none' });
+  }
+
+  applyMorph(0);
+  sync();
+</script>
+</body>
+</html>

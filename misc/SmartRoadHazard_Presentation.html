@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Road Hazard Detection System</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:    #050810;
+      --bg-mid:     #0a0f1e;
+      --glass-bg:   rgba(255,255,255,0.04);
+      --glass-border: rgba(255,255,255,0.10);
+      --glass-hover:  rgba(255,255,255,0.08);
+      --accent-red:   #ff4d4d;
+      --accent-orange:#ff8c42;
+      --accent-yellow:#ffd166;
+      --accent-blue:  #4ea8de;
+      --accent-gray:  #8b9ab0;
+      --text-primary: #f0f4ff;
+      --text-secondary: #8b9ab0;
+      --text-dim:     #4a5568;
+      --glow-red:     rgba(255, 77, 77, 0.25);
+      --glow-blue:    rgba(78, 168, 222, 0.25);
+      --glow-orange:  rgba(255, 140, 66, 0.20);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+    }
+
+    /* ── Background ───────────────────────────────── */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(78,168,222,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(255,77,77,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(255,140,66,0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Slide container ──────────────────────────── */
+    .slides-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 4rem;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.45s cubic-bezier(.4,0,.2,1), transform 0.45s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+    .slide.exit-left {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Glass card ───────────────────────────────── */
+    .glass {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .glass-strong {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 16px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+
+    /* ── Typography ───────────────────────────────── */
+    .slide-label {
+      font-size: 0.70rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 0.8rem;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    p {
+      font-size: clamp(0.85rem, 1.6vw, 1rem);
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+    .accent { color: var(--accent-blue); }
+    .accent-red { color: var(--accent-red); }
+    .accent-orange { color: var(--accent-orange); }
+    .accent-yellow { color: var(--accent-yellow); }
+
+    /* ── Slide 1: Title ───────────────────────────── */
+    .slide-title {
+      text-align: center;
+      gap: 1.5rem;
+    }
+    .title-badge {
+      display: inline-block;
+      padding: 0.35rem 1rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: rgba(78,168,222,0.12);
+      border: 1px solid rgba(78,168,222,0.30);
+      color: var(--accent-blue);
+      margin-bottom: 1.2rem;
+    }
+    .title-main {
+      background: linear-gradient(135deg, #f0f4ff 30%, var(--accent-blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .title-sub {
+      font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+      color: var(--text-secondary);
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .title-meta {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .title-meta span {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+    .title-links {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .link-chip {
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      border: 1px solid var(--glass-border);
+      color: var(--text-secondary);
+      background: var(--glass-bg);
+      font-family: 'Courier New', monospace;
+    }
+    .link-chip.live {
+      border-color: rgba(78,168,222,0.4);
+      color: var(--accent-blue);
+      background: rgba(78,168,222,0.06);
+    }
+
+    /* ── Stat number ──────────────────────────────── */
+    .big-stat {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    /* ── Two-col layout ───────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 960px;
+    }
+    .three-col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem;
+      width: 100%;
+      max-width: 960px;
+    }
+
+    /* ── Card block ───────────────────────────────── */
+    .card {
+      padding: 1.4rem 1.6rem;
+    }
+    .card .num {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.6rem;
+    }
+    .card p {
+      font-size: 0.88rem;
+      margin-top: 0.5rem;
+    }
+
+    /* ── Comparison table ─────────────────────────── */
+    .compare-table {
+      width: 100%;
+      max-width: 860px;
+      border-collapse: separate;
+      border-spacing: 0 6px;
+      font-size: 0.88rem;
+    }
+    .compare-table th {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 0.6rem 1.2rem;
+    }
+    .compare-table td {
+      padding: 0.9rem 1.2rem;
+      color: var(--text-secondary);
+      background: var(--glass-bg);
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .compare-table td:first-child {
+      border-left: 1px solid var(--glass-border);
+      border-radius: 10px 0 0 10px;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    .compare-table td:last-child {
+      border-right: 1px solid var(--glass-border);
+      border-radius: 0 10px 10px 0;
+      color: var(--accent-red);
+    }
+    .compare-table tr.ours td {
+      background: rgba(78,168,222,0.06);
+      border-color: rgba(78,168,222,0.20);
+      color: var(--text-primary);
+    }
+    .compare-table tr.ours td:last-child {
+      color: var(--accent-blue);
+    }
+
+    /* ── Architecture flow ────────────────────────── */
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 900px;
+    }
+    .arch-box {
+      padding: 0.9rem 1.2rem;
+      border-radius: 12px;
+      text-align: center;
+      min-width: 130px;
+      flex: 1;
+    }
+    .arch-box .arch-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.3rem;
+    }
+    .arch-box .arch-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .arch-box .arch-detail {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.2rem;
+    }
+    .arch-arrow {
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Innovation card ──────────────────────────── */
+    .innov-num {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      opacity: 0.15;
+    }
+
+    /* ── Severity markers ─────────────────────────── */
+    .marker-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 800px;
+    }
+    .marker-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+    }
+    .marker-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Tech stack pills ─────────────────────────── */
+    .stack-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      justify-content: center;
+      max-width: 700px;
+    }
+    .stack-pill {
+      padding: 0.35rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-family: 'Courier New', monospace;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text-secondary);
+    }
+    .stack-pill.hl { border-color: rgba(78,168,222,0.3); color: var(--accent-blue); background: rgba(78,168,222,0.06); }
+
+    /* ── Metrics table ────────────────────────────── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      width: 100%;
+      max-width: 860px;
+    }
+    .metric-card {
+      padding: 1.2rem 1.4rem;
+    }
+    .metric-card .metric-val {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--accent-blue);
+      line-height: 1;
+    }
+    .metric-card .metric-label {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-top: 0.3rem;
+    }
+
+    /* ── Challenges ───────────────────────────────── */
+    .challenge-card {
+      padding: 1.2rem 1.6rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .challenge-icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .challenge-card .challenge-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.3rem;
+    }
+    .challenge-card p { font-size: 0.84rem; }
+
+    /* ── Future work ──────────────────────────────── */
+    .future-tier {
+      width: 100%;
+      max-width: 860px;
+    }
+    .tier-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.6rem;
+      padding-left: 0.2rem;
+    }
+    .future-items {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.4rem;
+    }
+    .future-item {
+      padding: 0.7rem 1.1rem;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      flex: 1;
+      min-width: 180px;
+    }
+    .future-item.near { border-color: rgba(78,168,222,0.22); }
+    .future-item.mid  { border-color: rgba(255,140,66,0.22); }
+    .future-item.far  { border-color: rgba(255,77,77,0.18); }
+
+    /* ── Demo slide ───────────────────────────────── */
+    .demo-step {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 1rem 1.2rem;
+      border-radius: 12px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      margin-bottom: 0.7rem;
+      width: 100%;
+      max-width: 680px;
+    }
+    .demo-step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(78,168,222,0.15);
+      border: 1px solid rgba(78,168,222,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+      flex-shrink: 0;
+    }
+    .demo-step-text { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
+    .demo-step-text strong { color: var(--text-primary); font-weight: 600; }
+
+    /* ── Terminal block ───────────────────────────── */
+    .terminal {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 1rem 1.4rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: #a8ff78;
+      width: 100%;
+      max-width: 560px;
+      line-height: 1.7;
+    }
+    .terminal .dim { color: var(--text-dim); }
+    .terminal .warn { color: var(--accent-orange); }
+
+    /* ── Navigation ───────────────────────────────── */
+    .nav {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .nav-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(12px);
+      color: var(--text-primary);
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.25);
+    }
+    .nav-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+    .nav-counter {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      min-width: 60px;
+      text-align: center;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Progress bar ─────────────────────────────── */
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-orange));
+      transition: width 0.4s cubic-bezier(.4,0,.2,1);
+      z-index: 200;
+    }
+
+    /* ── Slide number badge ───────────────────────── */
+    .slide-num {
+      position: fixed;
+      top: 1.5rem;
+      right: 2rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      z-index: 100;
+    }
+
+    /* ── Util ─────────────────────────────────────── */
+    .mt1 { margin-top: 0.5rem; }
+    .mt2 { margin-top: 1rem; }
+    .mt3 { margin-top: 1.5rem; }
+    .center { text-align: center; }
+    .w-full { width: 100%; }
+    .max-w { max-width: 760px; }
+    .content-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    /* Verification progress bar animation */
+    .verify-bar-wrap {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border-radius: 100px;
+      height: 6px;
+      margin-top: 0.6rem;
+    }
+    .verify-bar-fill {
+      height: 6px;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-orange));
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-num" id="slideNum">01 / 13</div>
+
+<div class="slides-wrapper" id="slidesWrapper">
+
+  <!-- ── Slide 01: Title ──────────────────────────── -->
+  <section class="slide slide-title active" data-index="0">
+    <div class="title-badge">B.Tech Final Year Project · Ramdeobaba University, Nagpur</div>
+    <h1 class="title-main">Smart Road Hazard<br>Detection System</h1>
+    <p class="title-sub mt2">Real-time pothole and speedbreaker detection using an ESP32 ultrasonic sensor, crowd-verified by multiple independent detections, displayed on a live map dashboard — no app install required.</p>
+    <div class="title-meta mt3">
+      <span>Krish Potanwar</span>
+      <span>·</span>
+      <span>Soumya Jaiswal</span>
+      <span>·</span>
+      <span>Bhavika Valecha</span>
+      <span>·</span>
+      <span>Shubhiksha Bisen</span>
+      <span>·</span>
+      <span>Harshit Widhwani</span>
+    </div>
+    <div class="title-links">
+      <span class="link-chip live">smart-road-hazard.vercel.app</span>
+      <span class="link-chip">github.com/Krishpotanwar/SmartRoadHazard</span>
+      <span class="link-chip">wokwi.com/projects/458668521911516161</span>
+    </div>
+  </section>
+
+  <!-- ── Slide 02: The Problem ─────────────────────── -->
+  <section class="slide" data-index="1">
+    <div class="content-stack">
+      <div class="slide-label">The Problem</div>
+      <h2 class="center">India's roads are <span class="accent-red">breaking things</span></h2>
+      <p class="center max-w mt2">India has over 6 lakh kilometres of roads. A significant portion has potholes. Most of those potholes sit there unreported for months.</p>
+
+      <div class="three-col mt3" style="max-width:800px;">
+        <div class="glass-strong card center">
+          <div class="big-stat accent-red">~3,000</div>
+          <p class="mt1">pothole-related deaths per year<br><span style="font-size:0.75rem;color:var(--text-dim);">NCRB data</span></p>
+        </div>
+        <div class="glass-strong card center">
+          <div class="big-stat accent-orange">25,000+</div>
+          <p class="mt1">injuries annually from bad roads</p>
+        </div>
+        <div class="glass-strong card center">
+          <div class="big-stat accent-yellow">months</div>
+          <p class="mt1">average time a hazard sits<br>before it is officially repaired</p>
+        </div>
+      </div>
+
+      <p class="center max-w mt3" style="max-width:640px;">The detection gap is the real problem. By the time someone opens an app and manually files a report, the next hundred vehicles have already hit the same hole. Manual reporting is not fast enough.</p>
+    </div>
+  </section>
+
+  <!-- ── Slide 03: Why Existing Approaches Fall Short ── -->
+  <section class="slide" data-index="2">
+    <div class="content-stack">
+      <div class="slide-label">Existing solutions</div>
+      <h2 class="center">Three approaches, <span class="accent-red">three limitations</span></h2>
+      <p class="center mt1" style="max-width:580px;">None of them verify a hazard across multiple independent sources before alerting anyone downstream.</p>
+
+      <table class="compare-table mt3">
+        <thead>
+          <tr>
+            <th>Approach</th>
+            <th>How it works</th>
+            <th>The gap</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Manual apps (Pothole Ratha, etc.)</td>
+            <td>User takes a photo and submits</td>
+            <td>Needs a human to notice, stop, and act — zero automation</td>
+          </tr>
+          <tr>
+            <td>Phone accelerometer methods</td>
+            <td>IMU detects a sudden bump while driving</td>
+            <td>Speed bumps, rail crossings, and rough acceleration all trigger false alerts</td>
+          </tr>
+          <tr>
+            <td>Municipal road surveys</td>
+            <td>Inspection crews drive marked routes periodically</td>
+            <td>Slow, expensive, and a new pothole forming today won't show up for weeks</td>
+          </tr>
+          <tr class="ours">
+            <td>Smart Road Hazard (our system)</td>
+            <td>Ultrasonic sensor on each vehicle, Flask verification backend, live map</td>
+            <td>Automated, continuous, depth-graded, and verified before any alert fires</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Slide 04: Solution Overview ──────────────── -->
+  <section class="slide" data-index="3">
+    <div class="content-stack">
+      <div class="slide-label">System overview</div>
+      <h2 class="center">From sensor to screen <span class="accent">in under 2 seconds</span></h2>
+      <p class="center mt1" style="max-width:560px;">Five layers, each with a single job. The interesting part is what happens in the middle — the verification logic that keeps false positives out.</p>
+
+      <div class="arch-flow mt3">
+        <div class="arch-box glass">
+          <div class="arch-label">Hardware</div>
+          <div class="arch-name">ESP32 + HC-SR04</div>
+          <div class="arch-detail">Measures road surface distance at 10Hz</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box glass">
+          <div class="arch-label">Classification</div>
+          <div class="arch-name">Depth grading</div>
+          <div class="arch-detail">Deep / Medium / Shallow / Speedbreaker</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box glass" style="border-color:rgba(78,168,222,0.25);">
+          <div class="arch-label">Verification</div>
+          <div class="arch-name">Crowd logic</div>
+          <div class="arch-detail">3 detections within 15m → confirmed</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box glass">
+          <div class="arch-label">Sync</div>
+          <div class="arch-name">Firebase RTDB</div>
+          <div class="arch-detail">Pushes to all connected clients instantly</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box glass">
+          <div class="arch-label">Map</div>
+          <div class="arch-name">Leaflet dashboard</div>
+          <div class="arch-detail">Color-coded markers + alert bar</div>
+        </div>
+      </div>
+
+      <div class="stack-grid mt3">
+        <span class="stack-pill hl">Flask REST API</span>
+        <span class="stack-pill hl">Firebase RTDB</span>
+        <span class="stack-pill hl">Leaflet.js</span>
+        <span class="stack-pill">ESP32 C++</span>
+        <span class="stack-pill">SQLite</span>
+        <span class="stack-pill">OpenStreetMap</span>
+        <span class="stack-pill">Vercel + Render</span>
+        <span class="stack-pill">Wokwi Simulation</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 05: The 3 Innovations ──────────────── -->
+  <section class="slide" data-index="4">
+    <div class="content-stack">
+      <div class="slide-label">What makes it different</div>
+      <h2 class="center">Three decisions that actually matter</h2>
+
+      <div class="three-col mt3" style="max-width:920px;">
+        <div class="glass-strong card">
+          <div class="innov-num">01</div>
+          <h3 class="mt1" style="color:var(--accent-blue);">Depth classification</h3>
+          <p class="mt1">The ultrasonic sensor measures how far the road surface drops relative to a rolling baseline. Distance delta above 25 cm = deep pothole. 8-15 cm = speedbreaker. Shallow and medium in between. Objective depth, not a guess.</p>
+          <p class="mt1" style="font-size:0.78rem;color:var(--text-dim);">Why it matters: repairs can be prioritized by severity, not just location.</p>
+        </div>
+        <div class="glass-strong card">
+          <div class="innov-num">02</div>
+          <h3 class="mt1" style="color:var(--accent-orange);">Crowd verification</h3>
+          <p class="mt1">A hazard only gets published after 3 independent vehicles detect it within a 15-metre radius (Haversine). One vehicle hitting a bump doesn't trigger alerts. Three independent detections does. The system self-validates without any human in the loop.</p>
+          <p class="mt1" style="font-size:0.78rem;color:var(--text-dim);">Why it matters: alert fatigue is the main reason drivers stop trusting hazard apps.</p>
+        </div>
+        <div class="glass-strong card">
+          <div class="innov-num">03</div>
+          <h3 class="mt1" style="color:var(--accent-yellow);">Shadow alerts</h3>
+          <p class="mt1">When a medium or deep pothole is verified, the dashboard fires a warning banner that auto-dismisses in 5 seconds. This specifically helps drivers behind large trucks and buses who can't see the road surface ahead of them.</p>
+          <p class="mt1" style="font-size:0.78rem;color:var(--text-dim);">Why it matters: the most dangerous potholes are the ones you can't see coming.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 06: Hardware Layer ──────────────────── -->
+  <section class="slide" data-index="5">
+    <div class="content-stack">
+      <div class="slide-label">Hardware layer</div>
+      <h2 class="center">The sensor setup</h2>
+      <p class="center mt1" style="max-width:580px;">Simulated entirely in Wokwi — no physical hardware needed to run or test the system. The ESP32 runs the same firmware it would on a real vehicle mount.</p>
+
+      <div class="two-col mt3" style="max-width:860px;">
+        <div class="glass-strong card">
+          <h3>Components</h3>
+          <div class="mt2" style="display:flex;flex-direction:column;gap:0.6rem;">
+            <div class="stack-pill" style="display:inline-block;width:fit-content;">ESP32 microcontroller</div>
+            <div class="stack-pill" style="display:inline-block;width:fit-content;">HC-SR04 ultrasonic sensor</div>
+            <div class="stack-pill" style="display:inline-block;width:fit-content;">SSD1306 OLED display</div>
+            <div class="stack-pill" style="display:inline-block;width:fit-content;">3 status LEDs (R/G/B)</div>
+          </div>
+          <p class="mt2" style="font-size:0.82rem;">Trigger: GPIO 5 · Echo: GPIO 18. The first 10 readings set the baseline distance. Everything after is measured as a delta against that baseline.</p>
+        </div>
+        <div class="glass-strong card">
+          <h3>Classification logic</h3>
+          <div class="mt2" style="display:flex;flex-direction:column;gap:0.5rem;font-family:'Courier New',monospace;font-size:0.8rem;color:var(--text-secondary);">
+            <div>delta &gt; 25 cm &nbsp;→ <span style="color:var(--accent-red);">DEEP POTHOLE</span></div>
+            <div>delta 15-25 cm → <span style="color:var(--accent-orange);">MEDIUM POTHOLE</span></div>
+            <div>delta 5-15 cm &nbsp;→ <span style="color:var(--accent-yellow);">SHALLOW POTHOLE</span></div>
+            <div>delta -5 to -15 → <span style="color:var(--accent-blue);">SPEED BREAKER</span></div>
+            <div>| delta | &lt; 5 cm → <span style="color:var(--text-dim);">CLEAR ROAD</span></div>
+          </div>
+          <p class="mt2" style="font-size:0.82rem;">Serial output: <span style="font-family:'Courier New',monospace;font-size:0.78rem;color:#a8ff78;">POTHOLE,DEEP,21.1458,79.0882</span></p>
+        </div>
+      </div>
+
+      <div class="marker-row mt3">
+        <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-red);"></div>Deep pothole</div>
+        <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-orange);"></div>Medium pothole</div>
+        <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-yellow);"></div>Shallow pothole</div>
+        <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-blue);"></div>Speed breaker</div>
+        <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-gray);"></div>Unverified (pending)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 07: Backend Architecture ───────────── -->
+  <section class="slide" data-index="6">
+    <div class="content-stack">
+      <div class="slide-label">Backend</div>
+      <h2 class="center">Where the verification logic lives</h2>
+      <p class="center mt1" style="max-width:580px;">Three Python files. The crowd verification in <span style="font-family:'Courier New',monospace;font-size:0.9em;color:var(--accent-blue);">database.py</span> is the core of the whole system.</p>
+
+      <div class="three-col mt3" style="max-width:920px;">
+        <div class="glass card">
+          <div class="num">bridge.py</div>
+          <h3>Data bridge</h3>
+          <p class="mt1">Reads serial output from ESP32 (or generates realistic Nagpur route data in demo mode). Pushes detections to the Flask API and Firebase simultaneously.</p>
+        </div>
+        <div class="glass card" style="border-color:rgba(78,168,222,0.22);">
+          <div class="num">database.py</div>
+          <h3>Verification engine</h3>
+          <p class="mt1">Every new detection runs <span style="font-family:'Courier New',monospace;font-size:0.85em;">add_detection()</span>. It checks all existing records within 15 metres (Haversine). If count reaches 3, <span style="font-family:'Courier New',monospace;font-size:0.85em;">verified</span> flips to 1. That's the entire algorithm.</p>
+          <div class="verify-bar-wrap mt2">
+            <div class="verify-bar-fill" style="width:33%;"></div>
+          </div>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:0.4rem;">1 / 3 detections — unverified</p>
+        </div>
+        <div class="glass card">
+          <div class="num">server.py</div>
+          <h3>REST API</h3>
+          <p class="mt1">Five endpoints over Flask with full CORS. The two most used: <span style="font-family:'Courier New',monospace;font-size:0.85em;">GET /api/hazards</span> (verified only) and <span style="font-family:'Courier New',monospace;font-size:0.85em;">POST /api/hazards</span> (submit detection).</p>
+          <div class="stack-pill mt2" style="font-size:0.75rem;">Deployed: Render · Port 5001</div>
+        </div>
+      </div>
+
+      <div class="terminal mt3">
+        <div class="dim"># Verification logic (simplified)</div>
+        <div>nearby = db.query(<span style="color:#ffd166;">"SELECT * FROM hazards"</span>)</div>
+        <div>matches = [h <span style="color:var(--accent-blue);">for</span> h <span style="color:var(--accent-blue);">in</span> nearby</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if haversine(h, new) &lt; <span style="color:var(--accent-orange);">15</span>]</div>
+        <div><span style="color:var(--accent-blue);">if</span> len(matches) &gt;= <span style="color:var(--accent-orange);">3</span>:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;mark_verified(hazard_id) <span class="dim"> # alert fires</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 08: Frontend Dashboard ─────────────── -->
+  <section class="slide" data-index="7">
+    <div class="content-stack">
+      <div class="slide-label">Frontend</div>
+      <h2 class="center">The live map dashboard</h2>
+      <p class="center mt1" style="max-width:580px;">Runs entirely in the browser. No app install. No API key. No billing account. Leaflet.js on OpenStreetMap tiles — free, fast, and deployable on Vercel in under a minute.</p>
+
+      <div class="two-col mt3" style="max-width:900px;">
+        <div class="glass card">
+          <h3>What the map shows</h3>
+          <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.8rem;">
+            <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-gray);"></div>Grey marker — 1 or 2 detections, not yet confirmed</div>
+            <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-yellow);"></div>Yellow — shallow pothole (verified)</div>
+            <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-orange);"></div>Orange — medium pothole, shadow alert fires</div>
+            <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-red);"></div>Red — deep pothole, highest priority alert</div>
+            <div class="marker-chip"><div class="marker-dot" style="background:var(--accent-blue);"></div>Blue — speed breaker</div>
+          </div>
+        </div>
+        <div class="glass card">
+          <h3>Live sync</h3>
+          <p class="mt1">Two modes: Firebase listener (instant push) and local polling every 2 seconds. Both work. Firebase mode keeps all open browser tabs in sync without anyone refreshing.</p>
+          <h3 class="mt2">Shadow alert bar</h3>
+          <p class="mt1">A warning banner slides in from the bottom when a medium or deep hazard is verified nearby. It auto-dismisses in 5 seconds — enough time to slow down, not long enough to be annoying.</p>
+          <h3 class="mt2">Tooltip detail</h3>
+          <p class="mt1">Hover any marker: type, severity, and verification count (e.g. "2/3 verified" or "✓ Verified").</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 09: Demo Walkthrough ───────────────── -->
+  <section class="slide" data-index="8">
+    <div class="content-stack">
+      <div class="slide-label">Demo</div>
+      <h2 class="center">Running it yourself</h2>
+      <p class="center mt1" style="max-width:560px;">Two ways to test without physical hardware. The Wokwi route is the full end-to-end flow. The keyboard simulator is faster for quick demos.</p>
+
+      <div class="mt3" style="width:100%;max-width:680px;">
+        <div class="demo-step">
+          <div class="demo-step-num">1</div>
+          <div class="demo-step-text">Open <strong>Wokwi simulation</strong> at <span style="font-family:'Courier New',monospace;font-size:0.85em;color:var(--accent-blue);">wokwi.com/projects/458668521911516161</span> — drag the HC-SR04 distance slider to trigger detections</div>
+        </div>
+        <div class="demo-step">
+          <div class="demo-step-num">2</div>
+          <div class="demo-step-text">Open the <strong>live dashboard</strong> in a second tab at <span style="font-family:'Courier New',monospace;font-size:0.85em;color:var(--accent-blue);">smart-road-hazard.vercel.app</span></div>
+        </div>
+        <div class="demo-step">
+          <div class="demo-step-num">3</div>
+          <div class="demo-step-text">Trigger the same location <strong>3 times</strong> — watch the grey pin change colour and the shadow alert bar appear</div>
+        </div>
+        <div class="demo-step">
+          <div class="demo-step-num">4</div>
+          <div class="demo-step-text">Alternatively: run <span style="font-family:'Courier New',monospace;font-size:0.85em;color:#a8ff78;">python simulator.py</span> locally and press <strong>1</strong> (deep pothole) or <strong>4</strong> (speedbreaker) to inject test detections via keyboard</div>
+        </div>
+      </div>
+
+      <div class="terminal mt2">
+        <div class="dim"># Local demo (no hardware needed)</div>
+        <div>cd backend &amp;&amp; python server.py</div>
+        <div>python bridge.py <span class="warn">--demo</span> <span class="dim"> # auto-generates Nagpur route</span></div>
+        <div class="dim"># Open frontend/index.html in browser</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 10: Results & Metrics ──────────────── -->
+  <section class="slide" data-index="9">
+    <div class="content-stack">
+      <div class="slide-label">Results</div>
+      <h2 class="center">What the system delivers</h2>
+      <p class="center mt1" style="max-width:560px;">These are engineering parameters, not marketing claims. Every number is a deliberate design choice that can be tuned.</p>
+
+      <div class="metrics-grid mt3">
+        <div class="glass-strong metric-card">
+          <div class="metric-val">2 sec</div>
+          <div class="metric-label">Map update latency (polling interval)</div>
+        </div>
+        <div class="glass-strong metric-card">
+          <div class="metric-val">15 m</div>
+          <div class="metric-label">Crowd verification radius (Haversine)</div>
+        </div>
+        <div class="glass-strong metric-card">
+          <div class="metric-val">3</div>
+          <div class="metric-label">Independent detections needed before any alert fires</div>
+        </div>
+        <div class="glass-strong metric-card">
+          <div class="metric-val">4 types</div>
+          <div class="metric-label">Deep / Medium / Shallow / Speedbreaker</div>
+        </div>
+        <div class="glass-strong metric-card">
+          <div class="metric-val">5 cm</div>
+          <div class="metric-label">Minimum delta that registers as a hazard (pothole threshold)</div>
+        </div>
+        <div class="glass-strong metric-card">
+          <div class="metric-val">0</div>
+          <div class="metric-label">External API keys or billing accounts required</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 11: Challenges ──────────────────────── -->
+  <section class="slide" data-index="10">
+    <div class="content-stack">
+      <div class="slide-label">Challenges</div>
+      <h2 class="center">Three walls we actually hit</h2>
+      <p class="center mt1" style="max-width:560px;">None of these were theoretical. Each one blocked progress and required a real fix.</p>
+
+      <div style="display:flex;flex-direction:column;gap:1rem;width:100%;max-width:760px;margin-top:1.5rem;">
+        <div class="challenge-card glass">
+          <div class="challenge-icon">🚧</div>
+          <div>
+            <div class="challenge-title">macOS blocked port 5000</div>
+            <p>AirPlay Receiver on macOS Monterey silently occupies port 5000. Flask's default port. The app would start, appear to work, and then randomly fail to serve requests. Moved to port 5001. The lesson: when something works in CI and fails on a dev machine, check what else is running on that port.</p>
+          </div>
+        </div>
+        <div class="challenge-card glass">
+          <div class="challenge-icon">🗺</div>
+          <div>
+            <div class="challenge-title">Google Maps requires a billing account</div>
+            <p>The original design used Google Maps. Midway through, a billing account was required even for free-tier usage. Switched to Leaflet.js and OpenStreetMap tiles. No key, no account, no surprises. This also made the project deployable by anyone without setup steps.</p>
+          </div>
+        </div>
+        <div class="challenge-card glass">
+          <div class="challenge-icon">⚡</div>
+          <div>
+            <div class="challenge-title">Wokwi serial output too fast to demo live</div>
+            <p>When the ESP32 simulation runs at full speed, the serial data floods the bridge faster than a live demo can follow. Built <span style="font-family:'Courier New',monospace;font-size:0.88em;color:var(--accent-blue);">simulator.py</span> — a keyboard-driven interface where pressing 1-4 fires specific hazard types on demand. Better than the real thing for presentations.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 12: Future Work ─────────────────────── -->
+  <section class="slide" data-index="11">
+    <div class="content-stack">
+      <div class="slide-label">What comes next</div>
+      <h2 class="center">From simulation to road</h2>
+      <p class="center mt1" style="max-width:580px;">The gap between "working demo" and "deployed on real vehicles" is exactly two steps: real GPS hardware and a real road test in Nagpur.</p>
+
+      <div class="future-tier mt3">
+        <div class="tier-label" style="color:var(--accent-blue);">Next 2 weeks</div>
+        <div class="future-items">
+          <div class="future-item near">Replace simulated GPS with a NEO-6M real GPS module on physical ESP32 hardware</div>
+          <div class="future-item near">Switch from 2-second polling to WebSocket push for sub-second map updates</div>
+          <div class="future-item near">Road test: mount the sensor on a bicycle, run it on Nagpur streets, compare simulation data against reality</div>
+        </div>
+
+        <div class="tier-label" style="color:var(--accent-orange);">Next 1-3 months</div>
+        <div class="future-items">
+          <div class="future-item mid">React Native / Flutter mobile app — detection runs on-device, no ESP32 needed for consumer use</div>
+          <div class="future-item mid">Fleet management view for logistics companies: see all vehicle positions + hazards on one screen</div>
+        </div>
+
+        <div class="tier-label" style="color:var(--accent-red);">Research direction (AI/ML alignment)</div>
+        <div class="future-items">
+          <div class="future-item far">Add a camera + YOLO object detection layer to visually confirm potholes alongside ultrasonic data</div>
+          <div class="future-item far">Push verified hazards to NHAI or Smart City municipal APIs automatically</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 13: Conclusion ───────────────────────── -->
+  <section class="slide slide-title" data-index="12">
+    <div class="content-stack center" style="gap:1rem;">
+      <div class="slide-label">Conclusion</div>
+      <h2>What we built, and why it's different</h2>
+      <p class="center mt2" style="max-width:640px;line-height:1.8;">
+        Most road hazard detection systems either need a human to file a report or accept every sensor reading as ground truth. This system does neither.
+        It collects sensor data automatically and only acts when three independent vehicles agree on the same hazard within 15 metres.
+        That one design decision — crowd verification before alerting — is what keeps it usable on real roads.
+      </p>
+
+      <div class="three-col mt3" style="max-width:800px;">
+        <div class="glass card center">
+          <h3 style="color:var(--accent-blue);">Depth classification</h3>
+          <p class="mt1" style="font-size:0.82rem;">Objective severity grading from sensor data, not user judgment</p>
+        </div>
+        <div class="glass card center">
+          <h3 style="color:var(--accent-orange);">Crowd verification</h3>
+          <p class="mt1" style="font-size:0.82rem;">Three independent detections before any alert reaches a driver</p>
+        </div>
+        <div class="glass card center">
+          <h3 style="color:var(--accent-yellow);">Shadow alerts</h3>
+          <p class="mt1" style="font-size:0.82rem;">Real-time warnings for drivers who can't see the road ahead</p>
+        </div>
+      </div>
+
+      <div class="title-links mt3">
+        <span class="link-chip live">smart-road-hazard.vercel.app</span>
+        <span class="link-chip">github.com/Krishpotanwar/SmartRoadHazard</span>
+      </div>
+
+      <p class="mt3" style="font-size:0.85rem;color:var(--text-dim);">B.Tech CSE (AI & ML) · Ramdeobaba University, Nagpur · 2024-25</p>
+    </div>
+  </section>
+
+</div><!-- /.slides-wrapper -->
+
+<!-- ── Navigation ────────────────────────────────── -->
+<nav class="nav">
+  <button class="nav-btn" id="btnPrev" disabled>&#8592;</button>
+  <span class="nav-counter" id="navCounter">1 / 13</span>
+  <button class="nav-btn" id="btnNext">&#8594;</button>
+</nav>
+
+<script>
+  const slides    = Array.from(document.querySelectorAll('.slide'));
+  const btnPrev   = document.getElementById('btnPrev');
+  const btnNext   = document.getElementById('btnNext');
+  const counter   = document.getElementById('navCounter');
+  const slideNum  = document.getElementById('slideNum');
+  const progress  = document.getElementById('progressBar');
+  const total     = slides.length;
+  let current     = 0;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= total) return;
+    slides[current].classList.remove('active');
+    slides[current].classList.add(idx > current ? 'exit-left' : '');
+    setTimeout(() => slides[current].classList.remove('exit-left'), 450);
+    current = idx;
+    slides[current].classList.add('active');
+    btnPrev.disabled = current === 0;
+    btnNext.disabled = current === total - 1;
+    counter.textContent  = `${current + 1} / ${total}`;
+    slideNum.textContent = `${pad(current + 1)} / ${pad(total)}`;
+    progress.style.width = `${((current + 1) / total) * 100}%`;
+  }
+
+  btnPrev.addEventListener('click', () => goTo(current - 1));
+  btnNext.addEventListener('click', () => goTo(current + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+  });
+
+  // Touch / swipe
+  let touchX = null;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    if (touchX === null) return;
+    const dx = touchX - e.changedTouches[0].clientX;
+    if (Math.abs(dx) > 50) goTo(dx > 0 ? current + 1 : current - 1);
+    touchX = null;
+  });
+
+  // Init — slide 0 already has `active` in HTML; just sync the UI state
+  btnPrev.disabled = true;
+  counter.textContent  = `1 / ${total}`;
+  slideNum.textContent = `${pad(1)} / ${pad(total)}`;
+  progress.style.width = `${(1 / total) * 100}%`;
+</script>
+
+</body>
+</html>

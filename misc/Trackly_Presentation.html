@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trackly — NGO Event Management</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #05080f;
+      --glass:       rgba(255,255,255,0.04);
+      --glass-bd:    rgba(255,255,255,0.09);
+      --glass-strong: rgba(255,255,255,0.07);
+
+      --green:   #34d399;
+      --purple:  #818cf8;
+      --orange:  #fb923c;
+      --rose:    #f87171;
+      --sky:     #38bdf8;
+
+      --text:    #f0f4ff;
+      --sec:     #94a3b8;
+      --dim:     #475569;
+      --white:   #ffffff;
+    }
+
+    html, body { height: 100%; overflow: hidden; background: var(--bg);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--text); }
+
+    /* ── Ambient glow ── */
+    .bg-glow {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 55% at 15% 8%,  rgba(52,211,153,.07) 0%, transparent 65%),
+        radial-gradient(ellipse 55% 45% at 85% 88%, rgba(129,140,248,.06) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 35% at 50% 50%, rgba(251,146,60,.04)  0%, transparent 55%);
+    }
+
+    /* ── Slide system ── */
+    .deck { position: relative; z-index: 1; width: 100vw; height: 100vh; overflow: hidden; }
+
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 2.6rem 3.8rem;
+      opacity: 0; transform: translateX(56px);
+      transition: opacity .42s cubic-bezier(.4,0,.2,1), transform .42s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+    }
+    .slide.active  { opacity: 1; transform: translateX(0);   pointer-events: all; }
+    .slide.prev    { opacity: 0; transform: translateX(-56px); }
+
+    /* ── Glass helpers ── */
+    .g  { background: var(--glass);        border: 1px solid var(--glass-bd);    border-radius: 16px; backdrop-filter: blur(20px); }
+    .gs { background: var(--glass-strong); border: 1px solid rgba(255,255,255,.12); border-radius: 18px; backdrop-filter: blur(24px); }
+
+    /* ── Typography ── */
+    .label { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; color: var(--dim); margin-bottom: .7rem; text-align: center; }
+    h1 { font-size: clamp(2rem,4.8vw,3.2rem); font-weight: 800; line-height: 1.12; letter-spacing: -.025em; }
+    h2 { font-size: clamp(1.4rem,3.2vw,2.1rem); font-weight: 700; line-height: 1.18; letter-spacing: -.02em; }
+    h3 { font-size: 1rem; font-weight: 600; }
+    p  { font-size: clamp(.82rem,1.5vw,.97rem); line-height: 1.72; color: var(--sec); }
+    .center { text-align: center; }
+    .accent-green  { color: var(--green);  }
+    .accent-purple { color: var(--purple); }
+    .accent-orange { color: var(--orange); }
+    .accent-rose   { color: var(--rose);   }
+    .accent-sky    { color: var(--sky);    }
+
+    /* ── Layout grids ── */
+    .col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; width: 100%; max-width: 960px; }
+    .col3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.1rem; width: 100%; max-width: 960px; }
+    .col4 { display: grid; grid-template-columns: repeat(4,1fr); gap: .9rem; width: 100%; max-width: 960px; }
+    .stack { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+    /* ── Cards ── */
+    .card { padding: 1.3rem 1.5rem; }
+    .num  { font-size: .65rem; letter-spacing: .15em; text-transform: uppercase; color: var(--dim); margin-bottom: .5rem; }
+
+    /* ── Big stat ── */
+    .stat { font-size: clamp(2.2rem,5.5vw,3.6rem); font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+
+    /* ── Role table ── */
+    .role-table { width: 100%; max-width: 880px; border-collapse: separate; border-spacing: 0 6px; font-size: .88rem; }
+    .role-table th { font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); text-align: left; padding: .5rem 1.1rem; }
+    .role-table td { padding: .85rem 1.1rem; color: var(--sec); background: var(--glass); border-top: 1px solid var(--glass-bd); border-bottom: 1px solid var(--glass-bd); }
+    .role-table td:first-child { border-left: 1px solid var(--glass-bd); border-radius: 10px 0 0 10px; color: var(--text); font-weight: 600; }
+    .role-table td:last-child  { border-right: 1px solid var(--glass-bd); border-radius: 0 10px 10px 0; }
+
+    /* ── Arch flow ── */
+    .arch { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; justify-content: center; max-width: 940px; }
+    .arch-box { padding: .85rem 1.1rem; border-radius: 12px; text-align: center; flex: 1; min-width: 110px; }
+    .arch-lbl  { font-size: .62rem; letter-spacing: .13em; text-transform: uppercase; color: var(--dim); margin-bottom: .25rem; }
+    .arch-name { font-size: .88rem; font-weight: 700; color: var(--text); }
+    .arch-det  { font-size: .72rem; color: var(--sec); margin-top: .2rem; }
+    .arrow { color: var(--dim); font-size: 1rem; flex-shrink: 0; }
+
+    /* ── Feature grid ── */
+    .feat-card { padding: 1.2rem; }
+    .feat-icon { font-size: 1.6rem; margin-bottom: .55rem; display: block; }
+    .feat-card h3 { font-size: .95rem; margin-bottom: .35rem; }
+    .feat-card p  { font-size: .84rem; }
+
+    /* ── Pill badges ── */
+    .pill { display: inline-block; padding: .28rem .78rem; border-radius: 100px; font-size: .75rem; font-family: 'Courier New', monospace; background: var(--glass); border: 1px solid var(--glass-bd); color: var(--sec); }
+    .pill.hl { border-color: rgba(52,211,153,.35); color: var(--green); background: rgba(52,211,153,.06); }
+    .pills { display: flex; flex-wrap: wrap; gap: .55rem; justify-content: center; max-width: 720px; }
+
+    /* ── Timeline/steps ── */
+    .step { display: flex; gap: .9rem; align-items: flex-start; padding: .9rem 1.1rem; border-radius: 12px; width: 100%; max-width: 700px; margin-bottom: .6rem; }
+    .step-num { width: 28px; height: 28px; border-radius: 50%; background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.3); display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 700; color: var(--green); flex-shrink: 0; }
+    .step p { font-size: .88rem; }
+
+    /* ── Notification chips ── */
+    .notif-chip { padding: .65rem 1.1rem; border-radius: 12px; font-size: .85rem; display: flex; align-items: center; gap: .7rem; flex: 1; min-width: 200px; }
+
+    /* ── Progress bar ── */
+    #prog { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(90deg, var(--green), var(--purple)); transition: width .4s cubic-bezier(.4,0,.2,1); z-index: 200; }
+
+    /* ── Nav ── */
+    .nav { position: fixed; bottom: 1.8rem; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: .9rem; }
+    .nav-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--glass-bd); background: rgba(255,255,255,.05); backdrop-filter: blur(12px); color: var(--text); font-size: .95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .nav-btn:hover { background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.22); }
+    .nav-btn:disabled { opacity: .2; cursor: not-allowed; }
+    .nav-cnt { font-size: .75rem; color: var(--sec); min-width: 54px; text-align: center; letter-spacing: .08em; }
+
+    /* ── Slide # badge ── */
+    #badge { position: fixed; top: 1.4rem; right: 1.8rem; font-size: .68rem; letter-spacing: .12em; color: var(--dim); z-index: 100; }
+
+    /* ── Util ── */
+    .mt1 { margin-top: .5rem; } .mt2 { margin-top: 1rem; } .mt3 { margin-top: 1.5rem; }
+    .max640 { max-width: 640px; } .max720 { max-width: 720px; }
+    .link-chip { padding: .35rem .9rem; border-radius: 8px; font-size: .78rem; font-family: 'Courier New', monospace; border: 1px solid var(--glass-bd); color: var(--sec); background: var(--glass); }
+    .link-chip.live { border-color: rgba(52,211,153,.4); color: var(--green); background: rgba(52,211,153,.06); }
+  </style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div id="prog"></div>
+<div id="badge">01 / 13</div>
+
+<div class="deck" id="deck">
+
+  <!-- ══ S01 · Title ══════════════════════════════════════════════════════ -->
+  <section class="slide active" data-i="0">
+    <div class="stack center" style="gap:.9rem;">
+      <div style="display:inline-block;padding:.3rem 1rem;border-radius:100px;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.28);color:var(--green);">NGO Event Management Platform</div>
+
+      <h1 style="background:linear-gradient(135deg,#f0f4ff 30%,var(--green) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Trackly</h1>
+
+      <p class="mt1 max640">Coordinate your volunteers, track your events, and measure your impact — all in one place built for how nonprofits actually work.</p>
+
+      <div class="mt2" style="display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;font-size:.82rem;color:var(--dim);">
+        <span>Shlok Dwivedi</span><span>·</span><span>React + TypeScript + Firebase + Flask</span><span>·</span><span>119 commits</span>
+      </div>
+
+      <div class="mt2" style="display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center;">
+        <span class="link-chip live">trackly-phi.vercel.app</span>
+        <span class="link-chip">github.com/Shlok-Dwivedi/Trackly</span>
+      </div>
+
+      <div class="mt3 pills">
+        <span class="pill hl">React 18</span><span class="pill hl">TypeScript</span><span class="pill hl">Firebase</span>
+        <span class="pill">Flask</span><span class="pill">Supabase</span><span class="pill">Tailwind</span><span class="pill">Vercel</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ S02 · Problem ═════════════════════════════════════════════════════ -->
+  <section class="slide" data-i="1">
+    <div class="stack center">
+      <div class="label">The Problem</div>
+      <h2>Running an NGO on spreadsheets and WhatsApp groups</h2>
+      <p class="mt2 max640">A program coordinator is managing 12 upcoming events, 40 volunteers across three departments, and a shared Google Calendar that nobody keeps updated. She spends three hours every week chasing status updates over chat just to know who's showing up.</p>
+
+      <div class="col3 mt3" style="max-width:820px;">
+        <div class="gs card center">
+          <div class="stat accent-rose">3+</div>
+          <p class="mt1" style="font-size:.85rem;">hours a week lost to<br>coordination overhead</p>
+        </div>
+        <div class="gs card center">
+          <div class="stat accent-orange">0</div>
+          <p class="mt1" style="font-size:.85rem;">unified place for event data,<br>attendees, and analytics</p>
+        </div>
+        <div class="gs card center">
+          <div class="stat accent-purple">4+</div>
+          <p class="mt1" style="font-size:.85rem;">disconnected tools used<br>for one event lifecycle</p>
+        </div>
+      </div>
+
+      <p class="mt3 max640" style="font-style:italic;font-size:.9rem;">The tools nonprofits use were built for either personal task management or enterprise teams. Neither fits a volunteer coordinator managing field events on a shoestring budget.</p>
+    </div>
+  </section>
+
+  <!-- ══ S03 · Solution ════════════════════════════════════════════════════ -->
+  <section class="slide" data-i="2">
+    <div class="stack center">
+      <div class="label">The Solution</div>
+      <h2>One app. Built specifically for <span class="accent-green">NGO operations.</span></h2>
+      <p class="mt2 max640">Trackly is a web app for nonprofits to plan events, coordinate volunteers, track attendance, and measure impact — with role-based access so every team member sees exactly what they need and nothing they don't.</p>
+
+      <div class="col3 mt3" style="max-width:820px;">
+        <div class="gs card center">
+          <div style="font-size:2rem;margin-bottom:.5rem;">📅</div>
+          <h3 class="accent-green">Organise</h3>
+          <p class="mt1" style="font-size:.87rem;">Create and track events with statuses, categories, photos, and capacity limits</p>
+        </div>
+        <div class="gs card center">
+          <div style="font-size:2rem;margin-bottom:.5rem;">👥</div>
+          <h3 class="accent-purple">Coordinate</h3>
+          <p class="mt1" style="font-size:.87rem;">Manage volunteer enrollment, approvals, and attendance across your whole team</p>
+        </div>
+        <div class="gs card center">
+          <div style="font-size:2rem;margin-bottom:.5rem;">📊</div>
+          <h3 class="accent-orange">Measure</h3>
+          <p class="mt1" style="font-size:.87rem;">Track completion rates, volunteer trends, and event growth with live analytics</p>
+        </div>
+      </div>
+
+      <div class="mt3" style="display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center;">
+        <span class="link-chip live">trackly-phi.vercel.app</span>
+        <span class="link-chip">Live · Deployed on Vercel + Render</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ S04 · Core Workflow ═══════════════════════════════════════════════ -->
+  <section class="slide" data-i="3">
+    <div class="stack center">
+      <div class="label">Core workflow</div>
+      <h2>From login to live impact data <span class="accent-green">in 4 steps</span></h2>
+      <p class="mt1 max640" style="font-size:.92rem;">This is the loop a coordinator runs every time an event goes live — the dashboard updates in real time as each step happens.</p>
+
+      <div class="mt3" style="width:100%;max-width:760px;">
+        <div class="step g">
+          <div class="step-num">1</div>
+          <p><strong style="color:var(--text);">Sign in and land on the dashboard.</strong> The mini calendar shows today's events. Animated stat cards show total events, active volunteers, completion rate, and upcoming events this week.</p>
+        </div>
+        <div class="step g">
+          <div class="step-num">2</div>
+          <p><strong style="color:var(--text);">Staff creates an event.</strong> Category, capacity, location, datetime, cover photo, enrollment type (open or assigned). Status starts as Planned and auto-flips to Ongoing at start time.</p>
+        </div>
+        <div class="step g">
+          <div class="step-num">3</div>
+          <p><strong style="color:var(--text);">Volunteers join.</strong> Open events show a join button. Assigned events show a staff-managed attendee list. Join requests go through an approval flow — pending, approved, rejected — with rejection notes.</p>
+        </div>
+        <div class="step g">
+          <div class="step-num">4</div>
+          <p><strong style="color:var(--text);">Event completes.</strong> Analytics update live — donut charts, bar charts, volunteer trend lines. The Reports page gives the full picture across all events, staff, and months.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ S05 · Features ════════════════════════════════════════════════════ -->
+  <section class="slide" data-i="4">
+    <div class="stack center">
+      <div class="label">Key features</div>
+      <h2>Six modules. One coherent system.</h2>
+
+      <div class="col3 mt3" style="max-width:960px;gap:.9rem;">
+        <div class="g feat-card">
+          <span class="feat-icon">🗓</span>
+          <h3 class="accent-green">Smart calendar</h3>
+          <p class="mt1">Month, week, and agenda views. Color-coded categories with auto contrast. Click any day to create an event (admin/staff). Export to shared Google Calendar.</p>
+        </div>
+        <div class="g feat-card">
+          <span class="feat-icon">🔐</span>
+          <h3 class="accent-purple">Role-based access</h3>
+          <p class="mt1">Four roles: Admin, Staff, Volunteer, Viewer. Custom Firebase claims enforced on both frontend routes and backend endpoints. No role leakage.</p>
+        </div>
+        <div class="g feat-card">
+          <span class="feat-icon">📈</span>
+          <h3 class="accent-orange">Impact analytics</h3>
+          <p class="mt1">Donut charts (status/category), bar chart (monthly events), 6-month volunteer participation line chart, staff productivity table — all live from Firestore.</p>
+        </div>
+        <div class="g feat-card">
+          <span class="feat-icon">🔔</span>
+          <h3 class="accent-sky">Smart notifications</h3>
+          <p class="mt1">Push (FCM) + email (Resend) reminders at 24h, 6h, and 3h before each event. Idempotency tracking prevents duplicate reminders. Per-user preference settings.</p>
+        </div>
+        <div class="g feat-card">
+          <span class="feat-icon">👤</span>
+          <h3 class="accent-rose">Enrollment workflows</h3>
+          <p class="mt1">Two modes: open (volunteers apply, staff approve) and assigned (direct staff assignment). Capacity validation, duplicate prevention, rejection notes included.</p>
+        </div>
+        <div class="g feat-card">
+          <span class="feat-icon">📸</span>
+          <h3 class="accent-green">Photo documentation</h3>
+          <p class="mt1">Upload event photos stored in Supabase. Metadata includes uploader identity and caption. Photos are attached per event for audit and reporting purposes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ S06 · User Roles ══════════════════════════════════════════════════ -->
+  <section class="slide" data-i="5">
+    <div class="stack center">
+      <div class="label">Access model</div>
+      <h2>Four roles that mirror <span class="accent-green">how NGOs actually work</span></h2>
+      <p class="mt1 max640">Most productivity tools bolt on sharing after the fact. Trackly's permission model was built from the org chart up — admins, field coordinators, volunteers, and read-only stakeholders each get exactly what they need.</p>
+
+      <table class="role-table mt3">
+        <thead>
+          <tr>
+            <th>Role</th><th>What they can do</th><th>Real-world equivalent</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="color:var(--rose);">Admin</span></td>
+            <td>Create/delete events, manage user roles, delete users, view all analytics and reports</td>
+            <td>Program director or NGO head</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--orange);">Staff</span></td>
+            <td>Create and edit events, manage attendees, assign volunteers, upload photos</td>
+            <td>Field coordinator or program manager</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--green);">Volunteer</span></td>
+            <td>Browse open events, submit join requests, view personal event history, upload photos</td>
+            <td>Volunteer or field worker</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--dim);">Viewer</span></td>
+            <td>Read-only access to events and schedules — no creation or enrollment actions</td>
+            <td>Donor, board member, or external stakeholder</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="mt3" style="font-size:.88rem;color:var(--dim);max-width:640px;text-align:center;">Roles use custom Firebase claims synced to Firestore. Both the frontend routes and the Flask API independently verify permissions — if one check fails, access is denied.</p>
+    </div>
+  </section>
+
+  <!-- ══ S07 · Architecture ════════════════════════════════════════════════ -->
+  <section class="slide" data-i="6">
+    <div class="stack center">
+      <div class="label">Technical architecture</div>
+      <h2>Why each technology choice was <span class="accent-green">deliberate</span></h2>
+
+      <div class="arch mt3">
+        <div class="arch-box g">
+          <div class="arch-lbl">Frontend</div>
+          <div class="arch-name">React + Vite</div>
+          <div class="arch-det">TypeScript · Tailwind<br>shadcn/ui · Framer Motion</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="arch-box g" style="border-color:rgba(52,211,153,.22);">
+          <div class="arch-lbl">Auth + DB</div>
+          <div class="arch-name">Firebase</div>
+          <div class="arch-det">Auth · Firestore<br>Cloud Messaging</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="arch-box g">
+          <div class="arch-lbl">Backend</div>
+          <div class="arch-name">Flask + Gunicorn</div>
+          <div class="arch-det">Python · Render<br>Modular routes</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="arch-box g">
+          <div class="arch-lbl">Services</div>
+          <div class="arch-name">Supabase + Resend</div>
+          <div class="arch-det">File storage<br>Email delivery</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="arch-box g">
+          <div class="arch-lbl">Integrations</div>
+          <div class="arch-name">Google Calendar</div>
+          <div class="arch-det">OAuth export<br>Shared org calendar</div>
+        </div>
+      </div>
+
+      <div class="col3 mt3" style="max-width:880px;">
+        <div class="g card">
+          <div class="num">Decision 1</div>
+          <h3 class="accent-green">Firestore real-time listeners</h3>
+          <p class="mt1">The dashboard uses <span style="font-family:'Courier New',monospace;font-size:.88em;">onSnapshot</span> so every connected client sees event status changes immediately — no polling, no refresh needed.</p>
+        </div>
+        <div class="g card">
+          <div class="num">Decision 2</div>
+          <h3 class="accent-purple">Dual permission enforcement</h3>
+          <p class="mt1">Roles are verified at the React route level <em>and</em> in the Flask API via Bearer tokens. A compromised frontend still can't reach protected data.</p>
+        </div>
+        <div class="g card">
+          <div class="num">Decision 3</div>
+          <h3 class="accent-orange">Supabase for file storage</h3>
+          <p class="mt1">Event photos go to Supabase rather than Firebase Storage to separate file costs from database costs and avoid Firestore document size limits.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ S08 · Implementation Highlights ══════════════════════════════════ -->
+  <section class="slide" data-i="7">
+    <div class="stack center">
+      <div class="label">Under the hood</div>
+      <h2>Three problems that <span class="accent-green">actually took work to solve</span></h2>
+
+      <div class="col3 mt3" style="max-width:960px;">
+        <div class="gs card">
+          <div style="font-size:1.8rem;margin-bottom:.6rem;opacity:.6;font-weight:800;color:var(--dim);">01</div>
+          <h3 class="accent-green">Auto-status transitions</h3>
+          <p class="mt1">Events flip from Planned → Ongoing → Completed automatically based on start and end times. The logic runs in <span style="font-family:'Courier New',monospace;font-size:.88em;">useEvents.ts</span> on every fetch and normalises all Firestore Timestamps, JS Date objects, and Unix epoch values through one utility before comparison.</p>
+          <p class="mt2" style="font-size:.82rem;color:var(--dim);">Without this, an event that started at noon would still show "Planned" until someone manually changed it.</p>
+        </div>
+        <div class="gs card">
+          <div style="font-size:1.8rem;margin-bottom:.6rem;opacity:.6;font-weight:800;color:var(--dim);">02</div>
+          <h3 class="accent-purple">IST timezone normalisation</h3>
+          <p class="mt1">Firestore stores all times in UTC. Without normalisation, Indian users were seeing events appear a day early or late in the calendar. Built <span style="font-family:'Courier New',monospace;font-size:.88em;">toIST()</span>, <span style="font-family:'Courier New',monospace;font-size:.88em;">nowInIST()</span>, and <span style="font-family:'Courier New',monospace;font-size:.88em;">todayInIST()</span> utilities that every date display passes through.</p>
+          <p class="mt2" style="font-size:.82rem;color:var(--dim);">This is the kind of bug that's invisible in development and surfaces the moment a real user in a real timezone tries the app.</p>
+        </div>
+        <div class="gs card">
+          <div style="font-size:1.8rem;margin-bottom:.6rem;opacity:.6;font-weight:800;color:var(--dim);">03</div>
+          <h3 class="accent-orange">Reminder idempotency</h3>
+          <p class="mt1">The notification scheduler runs on a cron to send reminders at 24h, 6h, and 3h before each event. Without idempotency tracking, the same reminder would fire on every scheduler run. Added a Firestore flag per reminder per event that gets checked before any message is sent.</p>
+          <p class="mt2" style="font-size:.82rem;color:var(--dim);">A ±90 minute window handles schedule drift — if the cron runs slightly late, the reminder still fires.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ S09 · Analytics ═══════════════════════════════════════════════════ -->
+  <section class="slide" data-i="8">
+    <div class="stack center">
+      <div class="label">Analytics & reporting</div>
+      <h2>Data that actually <span class="accent-green">tells you something</span></h2>
+      <p class="mt1 max640" style="font-size:.92rem;">Most event apps let you store data. Trackly's Reports page turns that data into org-level decisions — completion rates, volunteer trends, staff output, monthly growth.</p>
+
+      <div class="col2 mt3" style="max-width:900px;">
+        <div class="gs card">
+          <h3 class="accent-green">Dashboard — live at a glance</h3>
+          <div style="display:flex;flex-direction:column;gap:.55rem;margin-top:.8rem;">
+            <div class="g" style="padding:.65rem 1rem;border-radius:10px;font-size:.88rem;color:var(--sec);">Animated stat cards — total events, active volunteers, completion rate, upcoming (7-day)</div>
+            <div class="g" style="padding:.65rem 1rem;border-radius:10px;font-size:.88rem;color:var(--sec);">Mini calendar with per-day event count badges and click-to-view</div>
+            <div class="g" style="padding:.65rem 1rem;border-radius:10px;font-size:.88rem;color:var(--sec);">Today's Events panel — real-time Firestore listener, no manual refresh</div>
+            <div class="g" style="padding:.65rem 1rem;border-radius:10px;font-size:.88rem;color:var(--sec);">Donut chart (event status breakdown) + bar chart (monthly distribution)</div>
+          </div>
+        </div>
+        <div class="gs card">
+          <h3 class="accent-purple">Reports — org-level insight</h3>
+          <div style="display:flex;flex-direction:column;gap:.55rem;margin-top:.8rem;">
+            <div class="g" style="padding:.65rem 1rem;border-radius:10px;font-size:.88rem;color:var(--sec);">6-month volunteer participation trend line chart with per-month drill-down modal</div>
+            <div class="g" style="padding:.65rem 1rem;border-radius:10px;font-size:.88rem;color:var(--sec);">Staff productivity table — events created vs completed, filterable by column</div>
+            <div class="g" style="padding:.65rem 1rem;border-radius:10px;font-size:.88rem;color:var(--sec);">Category breakdown donut — which event types get run most often</div>
+            <div class="g" style="padding:.65rem 1rem;border-radius:10px;font-size:.88rem;color:var(--sec);">Growth rate metric (month-over-month) with demo data fallback on empty DB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ S10 · Notifications ═══════════════════════════════════════════════ -->
+  <section class="slide" data-i="9">
+    <div class="stack center">
+      <div class="label">Notification system</div>
+      <h2>Reminders that reach people <span class="accent-green">where they actually are</span></h2>
+      <p class="mt1 max640" style="font-size:.92rem;">Email alone isn't enough for volunteers in the field. Push alone doesn't work for people who don't install apps. Trackly sends both, intelligently, without duplicating.</p>
+
+      <div class="col2 mt3" style="max-width:860px;">
+        <div class="gs card">
+          <h3 class="accent-green">How the timing works</h3>
+          <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem;">
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;border-radius:10px;background:var(--glass);border:1px solid var(--glass-bd);">
+              <span style="font-size:1.1rem;">⏰</span>
+              <span style="font-size:.88rem;color:var(--sec);">24 hours before — email + push reminder sent</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;border-radius:10px;background:var(--glass);border:1px solid var(--glass-bd);">
+              <span style="font-size:1.1rem;">⏰</span>
+              <span style="font-size:.88rem;color:var(--sec);">6 hours before — second reminder dispatched</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;border-radius:10px;background:var(--glass);border:1px solid var(--glass-bd);">
+              <span style="font-size:1.1rem;">⏰</span>
+              <span style="font-size:.88rem;color:var(--sec);">3 hours before — final reminder with event details</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;border-radius:10px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);">
+              <span style="font-size:1.1rem;">✓</span>
+              <span style="font-size:.88rem;color:var(--sec);">±90 minute drift window handles cron schedule variance</span>
+            </div>
+          </div>
+        </div>
+        <div class="gs card">
+          <h3 class="accent-purple">Channels and controls</h3>
+          <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem;">
+            <div style="padding:.7rem 1rem;border-radius:10px;background:var(--glass);border:1px solid var(--glass-bd);">
+              <div style="font-size:.88rem;font-weight:600;color:var(--sky);margin-bottom:.25rem;">Push via Firebase FCM</div>
+              <div style="font-size:.84rem;color:var(--sec);">FCM tokens stored per user in Firestore. Sent from the Flask backend with Bearer token auth.</div>
+            </div>
+            <div style="padding:.7rem 1rem;border-radius:10px;background:var(--glass);border:1px solid var(--glass-bd);">
+              <div style="font-size:.88rem;font-weight:600;color:var(--orange);margin-bottom:.25rem;">Email via Resend</div>
+              <div style="font-size:.84rem;color:var(--sec);">Transactional email with event details. Each user sets their own notification preferences.</div>
+            </div>
+            <div style="padding:.7rem 1rem;border-radius:10px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);">
+              <div style="font-size:.88rem;font-weight:600;color:var(--green);margin-bottom:.25rem;">Idempotency guard</div>
+              <div style="font-size:.84rem;color:var(--sec);">A Firestore flag per reminder per event prevents any message from sending twice, even if the cron runs multiple times.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ S11 · Tech Stack Deep Dive ═══════════════════════════════════════ -->
+  <section class="slide" data-i="10">
+    <div class="stack center">
+      <div class="label">Stack breakdown</div>
+      <h2>Full-stack, deployed, and production-ready</h2>
+      <p class="mt1 max640" style="font-size:.92rem;">119 commits. Two live deployments. A backend that runs Gunicorn in production. This isn't a class demo — it's a deployable product.</p>
+
+      <div class="col4 mt3" style="max-width:960px;">
+        <div class="g card">
+          <div class="num">Frontend</div>
+          <div style="display:flex;flex-direction:column;gap:.35rem;margin-top:.4rem;">
+            <span class="pill" style="font-size:.72rem;width:fit-content;">React 18 + TypeScript</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Vite (SWC)</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Tailwind CSS</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">shadcn/ui + Radix</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">TanStack Query v5</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Framer Motion</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Recharts</span>
+          </div>
+        </div>
+        <div class="g card">
+          <div class="num">Backend</div>
+          <div style="display:flex;flex-direction:column;gap:.35rem;margin-top:.4rem;">
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Python Flask 3.1</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Gunicorn (prod)</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">flask-cors</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Modular routes</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Bearer token auth</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Render hosting</span>
+          </div>
+        </div>
+        <div class="g card">
+          <div class="num">Data & Auth</div>
+          <div style="display:flex;flex-direction:column;gap:.35rem;margin-top:.4rem;">
+            <span class="pill hl" style="font-size:.72rem;width:fit-content;">Firebase Auth</span>
+            <span class="pill hl" style="font-size:.72rem;width:fit-content;">Firestore</span>
+            <span class="pill hl" style="font-size:.72rem;width:fit-content;">Firebase FCM</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Supabase storage</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Custom claims</span>
+          </div>
+        </div>
+        <div class="g card">
+          <div class="num">Integrations</div>
+          <div style="display:flex;flex-direction:column;gap:.35rem;margin-top:.4rem;">
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Google Calendar API</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Resend email</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">react-big-calendar</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Zod + RHF</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">date-fns</span>
+            <span class="pill" style="font-size:.72rem;width:fit-content;">Vitest</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt3" style="font-size:.86rem;color:var(--dim);max-width:640px;text-align:center;">TypeScript: 75.2% · JavaScript: 14.1% · Python: 5.6% · CSS + config: remainder</p>
+    </div>
+  </section>
+
+  <!-- ══ S12 · Challenges & Learnings ═════════════════════════════════════ -->
+  <section class="slide" data-i="11">
+    <div class="stack center">
+      <div class="label">Building it</div>
+      <h2>What took longer than expected, <span class="accent-green">and what we learned</span></h2>
+
+      <div class="col3 mt3" style="max-width:960px;">
+        <div class="gs card">
+          <div style="font-size:1.6rem;font-weight:800;color:var(--dim);opacity:.4;margin-bottom:.5rem;">01</div>
+          <h3 class="accent-rose">Firestore Timestamp hell</h3>
+          <p class="mt1">Firestore returns Timestamp objects. Some parts of the code expected JS Date objects. Some expected Unix milliseconds. The same event time came in three different shapes depending on how it was stored. Built a single normalisation utility that every date comparison routes through.</p>
+          <p class="mt2" style="font-size:.82rem;color:var(--dim);">Lesson: normalise data at the boundary, not at the point of use.</p>
+        </div>
+        <div class="gs card">
+          <div style="font-size:1.6rem;font-weight:800;color:var(--dim);opacity:.4;margin-bottom:.5rem;">02</div>
+          <h3 class="accent-orange">CORS on Render's dynamic URLs</h3>
+          <p class="mt1">Render generates preview URLs for each deployment that change with every push. The Flask CORS config originally used a hardcoded whitelist, which broke every time the Vercel frontend URL changed. Rewrote CORS handling to dynamically allow any <span style="font-family:'Courier New',monospace;font-size:.88em;">*.vercel.app</span> origin.</p>
+          <p class="mt2" style="font-size:.82rem;color:var(--dim);">Lesson: never hardcode deployment URLs in CORS config during active development.</p>
+        </div>
+        <div class="gs card">
+          <div style="font-size:1.6rem;font-weight:800;color:var(--dim);opacity:.4;margin-bottom:.5rem;">03</div>
+          <h3 class="accent-purple">Real-time + TanStack Query conflict</h3>
+          <p class="mt1">TanStack Query is built for HTTP requests with clear cache invalidation. Firestore's <span style="font-family:'Courier New',monospace;font-size:.88em;">onSnapshot</span> is a push model. Running both on the same data caused stale data and double renders. Resolved by separating real-time subscriptions from Query-managed endpoints with explicit cache invalidation hooks.</p>
+          <p class="mt2" style="font-size:.82rem;color:var(--dim);">Lesson: pick one data model per data domain and stick to it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ S13 · Roadmap & Close ═════════════════════════════════════════════ -->
+  <section class="slide" data-i="12">
+    <div class="stack center">
+      <div class="label">What comes next</div>
+      <h2>Trackly works. Here's where it goes from here.</h2>
+      <p class="mt1 max640" style="font-size:.92rem;">The core loop is solid. These three additions would take it from a strong student project to something an NGO would actually deploy for their full team.</p>
+
+      <div class="col3 mt3" style="max-width:920px;">
+        <div class="g card">
+          <div style="font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--green);margin-bottom:.6rem;">Near term</div>
+          <h3>Bulk CSV event import</h3>
+          <p class="mt1">NGOs with existing event schedules in Excel should be able to onboard in minutes, not hours. Drag-and-drop CSV upload with field mapping and validation preview.</p>
+          <p class="mt2" style="font-size:.82rem;color:var(--dim);">Solves the biggest onboarding friction point for organisations with historical data.</p>
+        </div>
+        <div class="g card">
+          <div style="font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--orange);margin-bottom:.6rem;">Mid term</div>
+          <h3>SMS via Twilio</h3>
+          <p class="mt1">Push and email don't reach volunteers in areas with poor connectivity or volunteers who don't use smartphones. SMS does. Twilio integration would extend the notification stack without changing the existing scheduler logic.</p>
+          <p class="mt2" style="font-size:.82rem;color:var(--dim);">Particularly relevant for rural NGO operations in India.</p>
+        </div>
+        <div class="g card">
+          <div style="font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--purple);margin-bottom:.6rem;">Research track</div>
+          <h3>QR attendance scanning</h3>
+          <p class="mt1">Replace manual check-in lists with a QR code per event that volunteers scan on arrival. Works offline on the coordinator's device and syncs to Firestore when connectivity returns.</p>
+          <p class="mt2" style="font-size:.82rem;color:var(--dim);">Field events often have poor internet — offline-first is the right design target here.</p>
+        </div>
+      </div>
+
+      <div class="mt3" style="display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center;">
+        <span class="link-chip live">trackly-phi.vercel.app</span>
+        <span class="link-chip">github.com/Shlok-Dwivedi/Trackly</span>
+      </div>
+
+      <p class="mt2" style="font-size:1.5rem;font-weight:700;color:var(--text);">Thank you</p>
+      <p style="font-size:.88rem;color:var(--dim);">Built by Shlok Dwivedi</p>
+    </div>
+  </section>
+
+</div><!-- /.deck -->
+
+<!-- Nav -->
+<nav class="nav">
+  <button class="nav-btn" id="btnP" disabled>&#8592;</button>
+  <span class="nav-cnt" id="cnt">1 / 13</span>
+  <button class="nav-btn" id="btnN">&#8594;</button>
+</nav>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const btnP   = document.getElementById('btnP');
+  const btnN   = document.getElementById('btnN');
+  const cnt    = document.getElementById('cnt');
+  const badge  = document.getElementById('badge');
+  const prog   = document.getElementById('prog');
+  const total  = slides.length;
+  let cur      = 0;
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  function go(idx){
+    if(idx < 0 || idx >= total) return;
+    slides[cur].classList.remove('active');
+    slides[cur].classList.add('prev');
+    const prevIdx = cur;
+    setTimeout(()=>{ slides[prevIdx].classList.remove('prev'); }, 450);
+    cur = idx;
+    slides[cur].classList.add('active');
+    btnP.disabled = cur === 0;
+    btnN.disabled = cur === total - 1;
+    cnt.textContent   = `${cur+1} / ${total}`;
+    badge.textContent = `${pad(cur+1)} / ${pad(total)}`;
+    prog.style.width  = `${((cur+1)/total)*100}%`;
+  }
+
+  btnP.addEventListener('click', ()=> go(cur-1));
+  btnN.addEventListener('click', ()=> go(cur+1));
+
+  document.addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'||e.key==='ArrowDown') go(cur+1);
+    if(e.key==='ArrowLeft' ||e.key==='ArrowUp')   go(cur-1);
+  });
+
+  let tx=null;
+  document.addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; });
+  document.addEventListener('touchend',e=>{
+    if(tx===null) return;
+    const dx = tx - e.changedTouches[0].clientX;
+    if(Math.abs(dx)>50) go(dx>0 ? cur+1 : cur-1);
+    tx=null;
+  });
+
+  // Init — slide 0 already has `active` in HTML, just sync UI
+  btnP.disabled = true;
+  cnt.textContent   = `1 / ${total}`;
+  badge.textContent = `${pad(1)} / ${pad(total)}`;
+  prog.style.width  = `${(1/total)*100}%`;
+</script>
+</body>
+</html>

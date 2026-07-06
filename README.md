@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/krishpotanwar-my-personal-vibe-coding-setup-badge.png)](https://mseep.ai/app/krishpotanwar-my-personal-vibe-coding-setup)
+
 # My Personal Vibe Coding Setup
 
 You know that moment when your AI assistant is *almost* in flow, then you switch tools and it acts like you just met?
